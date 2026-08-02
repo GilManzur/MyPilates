@@ -1,0 +1,14 @@
+{
+  "name": "mypilates-functions",
+  "description": "Scheduled reminders for MyPilates lessons and end-of-month payments",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "private": true
+}
