@@ -7,6 +7,7 @@ import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { currentYearMonth } from '../lib/money/calculations'
 import { formatLessonTime, fromLocalInputValue, toLocalInputValue } from '../lib/dates'
+import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
 import type { Lesson } from '../types'
 
 const emptyForm = {
@@ -14,21 +15,32 @@ const emptyForm = {
   title: '',
   startAt: '',
   endAt: '',
+  weekly: false,
+  untilDate: '',
 }
 
 export function CalendarPage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
   const { studios } = useStudios()
-  const { lessons, loading, saveLesson, removeLesson } = useLessons(yearMonth)
+  const { lessons, loading, saveLesson, saveWeeklyLessons, removeLesson } = useLessons(yearMonth)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const studioMap = useMemo(
     () => Object.fromEntries(studios.map((studio) => [studio.id, studio])),
     [studios],
   )
+
+  const weeklyCount = useMemo(() => {
+    if (!form.weekly || !form.startAt || !form.endAt || !form.untilDate) return 0
+    const startAt = fromLocalInputValue(form.startAt)
+    const endAt = fromLocalInputValue(form.endAt)
+    if (new Date(endAt) <= new Date(startAt)) return 0
+    return buildWeeklyOccurrences(startAt, endAt, form.untilDate).length
+  }, [form.weekly, form.startAt, form.endAt, form.untilDate])
 
   const openCreate = (date?: string) => {
     const start = date ? new Date(`${date}T10:00:00`) : new Date()
@@ -38,13 +50,17 @@ export function CalendarPage() {
     }
     const end = new Date(start)
     end.setHours(end.getHours() + 1)
+    const startIso = start.toISOString()
     setEditingId(null)
     setForm({
       studioId: studios[0]?.id ?? '',
       title: 'שיעור פילאטיס',
-      startAt: toLocalInputValue(start.toISOString()),
+      startAt: toLocalInputValue(startIso),
       endAt: toLocalInputValue(end.toISOString()),
+      weekly: false,
+      untilDate: defaultWeeklyUntilDate(startIso),
     })
+    setError('')
     setOpen(true)
   }
 
@@ -55,7 +71,10 @@ export function CalendarPage() {
       title: lesson.title,
       startAt: toLocalInputValue(lesson.startAt),
       endAt: toLocalInputValue(lesson.endAt),
+      weekly: false,
+      untilDate: '',
     })
+    setError('')
     setOpen(true)
   }
 
@@ -72,15 +91,39 @@ export function CalendarPage() {
       setError('שעת הסיום חייבת להיות אחרי ההתחלה')
       return
     }
-    await saveLesson({
-      id: editingId ?? undefined,
-      studioId: form.studioId,
-      title: form.title,
-      startAt,
-      endAt,
-    })
-    setOpen(false)
-    setForm(emptyForm)
+
+    setSaving(true)
+    try {
+      if (!editingId && form.weekly) {
+        if (!form.untilDate) {
+          setError('בחרי תאריך סיום לסדרה')
+          return
+        }
+        const count = await saveWeeklyLessons({
+          studioId: form.studioId,
+          title: form.title,
+          startAt,
+          endAt,
+          untilDate: form.untilDate,
+        })
+        if (count === 0) {
+          setError('לא נוצרו שיעורים — בדקי את טווח התאריכים')
+          return
+        }
+      } else {
+        await saveLesson({
+          id: editingId ?? undefined,
+          studioId: form.studioId,
+          title: form.title,
+          startAt,
+          endAt,
+        })
+      }
+      setOpen(false)
+      setForm(emptyForm)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const editingLesson = editingId ? lessons.find((item) => item.id === editingId) : null
@@ -136,6 +179,7 @@ export function CalendarPage() {
                     <p className="list-item__meta">
                       {studioMap[lesson.studioId]?.name ?? 'סטודיו'} ·{' '}
                       {formatLessonTime(lesson.startAt)} · {lesson.durationHours} שע׳
+                      {lesson.seriesId ? ' · קבוע' : ''}
                     </p>
                   </span>
                   <span className={`badge badge--${lesson.hoursConfirmed ? 'confirmed' : 'pending'}`}>
@@ -183,7 +227,17 @@ export function CalendarPage() {
                 type="datetime-local"
                 required
                 value={form.startAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, startAt: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setForm((prev) => ({
+                    ...prev,
+                    startAt: value,
+                    untilDate:
+                      prev.weekly && value
+                        ? defaultWeeklyUntilDate(fromLocalInputValue(value))
+                        : prev.untilDate,
+                  }))
+                }}
               />
             </Field>
             <Field label="סיום">
@@ -194,6 +248,45 @@ export function CalendarPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, endAt: e.target.value }))}
               />
             </Field>
+            {!editingId && (
+              <>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={form.weekly}
+                    onChange={(e) => {
+                      const weekly = e.target.checked
+                      setForm((prev) => ({
+                        ...prev,
+                        weekly,
+                        untilDate:
+                          weekly && prev.startAt
+                            ? defaultWeeklyUntilDate(fromLocalInputValue(prev.startAt))
+                            : prev.untilDate,
+                      }))
+                    }}
+                  />
+                  <span>
+                    <strong>שיעור קבוע</strong>
+                    <span className="check-field__hint">כל אותו יום ושעה בשבוע</span>
+                  </span>
+                </label>
+                {form.weekly && (
+                  <Field label="עד תאריך">
+                    <TextInput
+                      type="date"
+                      required
+                      value={form.untilDate}
+                      min={form.startAt.slice(0, 10)}
+                      onChange={(e) => setForm((prev) => ({ ...prev, untilDate: e.target.value }))}
+                    />
+                  </Field>
+                )}
+                {form.weekly && weeklyCount > 0 && (
+                  <p className="form-hint">ייווצרו {weeklyCount} שיעורים</p>
+                )}
+              </>
+            )}
             {error && <p className="form-error">{error}</p>}
             <div className="row-actions">
               {editingLesson && (
@@ -211,7 +304,13 @@ export function CalendarPage() {
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 ביטול
               </Button>
-              <Button type="submit">שמירה</Button>
+              <Button type="submit" disabled={saving}>
+                {saving
+                  ? 'שומר…'
+                  : form.weekly && !editingId && weeklyCount > 0
+                    ? `שמירת ${weeklyCount} שיעורים`
+                    : 'שמירה'}
+              </Button>
             </div>
           </form>
         </div>
