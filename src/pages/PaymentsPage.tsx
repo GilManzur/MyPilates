@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button } from '../components/Button'
+import { IconButton } from '../components/IconButton'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
 import { useHourEntries } from '../hooks/useHourEntries'
@@ -61,22 +61,23 @@ export function PaymentsPage() {
                   </p>
                 </div>
                 <p className="amount">{formatILS(summary.amount)}</p>
+                {summary.paymentStatus === 'confirmed' ? (
+                  <IconButton
+                    label="בטלי אישור תשלום"
+                    icon="undo"
+                    variant="secondary"
+                    onClick={() => void unconfirmPayment(summary.studioId, summary.amount)}
+                  />
+                ) : (
+                  <IconButton
+                    label="אישור שקיבלתי תשלום"
+                    icon="check"
+                    variant="primary"
+                    onClick={() => void confirmPayment(summary.studioId, summary.amount)}
+                    disabled={summary.amount <= 0}
+                  />
+                )}
               </div>
-              {summary.paymentStatus === 'confirmed' ? (
-                <Button
-                  variant="secondary"
-                  onClick={() => void unconfirmPayment(summary.studioId, summary.amount)}
-                >
-                  בטלי אישור תשלום
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => void confirmPayment(summary.studioId, summary.amount)}
-                  disabled={summary.amount <= 0}
-                >
-                  אישור שקיבלתי תשלום
-                </Button>
-              )}
             </li>
           ))}
         </ul>

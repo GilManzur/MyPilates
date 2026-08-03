@@ -337,7 +337,8 @@ h2 {
   align-items: stretch;
 }
 
-.list-item__button {
+.list-item__button,
+.list-item__main {
   flex: 1;
   display: flex;
   align-items: center;
@@ -347,8 +348,11 @@ h2 {
   border: 0;
   padding: 0;
   color: inherit;
-  cursor: pointer;
   min-width: 0;
+}
+
+.list-item__button {
+  cursor: pointer;
 }
 
 .list-item__title {
@@ -473,6 +477,60 @@ h2 {
   background: rgba(155, 77, 77, 0.12);
   color: var(--danger);
   width: 100%;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.icon-btn--ghost {
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.icon-btn--ghost:hover:not(:disabled) {
+  background: rgba(61, 90, 76, 0.08);
+  color: var(--ink);
+}
+
+.icon-btn--danger {
+  background: rgba(155, 77, 77, 0.12);
+  color: var(--danger);
+}
+
+.icon-btn--primary {
+  background: var(--brand);
+  color: #f4f7f5;
+}
+
+.icon-btn--secondary {
+  background: rgba(61, 90, 76, 0.1);
+  color: var(--brand);
+}
+
+.list-item__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.row-actions > .icon-btn {
+  flex: 0 0 auto;
 }
 
 .field {

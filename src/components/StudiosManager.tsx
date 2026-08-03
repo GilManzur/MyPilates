@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from './Button'
+import { IconButton } from './IconButton'
 import { Field, TextInput } from './Field'
 import { useStudios } from '../hooks/useStudios'
 import { STUDIO_COLORS } from '../lib/data/types'
@@ -69,7 +70,7 @@ export function StudiosManager() {
         <ul className="list">
           {studios.map((studio) => (
             <li key={studio.id} className="list-item list-item--action">
-              <button type="button" className="list-item__button" onClick={() => openEdit(studio)}>
+              <div className="list-item__main">
                 <span className="color-dot" style={{ background: studio.color }} />
                 <span className="list-item__body">
                   <p className="list-item__title">{studio.name}</p>
@@ -80,10 +81,16 @@ export function StudiosManager() {
                       : ''}
                   </p>
                 </span>
-              </button>
-              <Button variant="ghost" onClick={() => void removeStudio(studio.id)}>
-                מחק
-              </Button>
+              </div>
+              <div className="list-item__actions">
+                <IconButton label="עריכה" icon="edit" onClick={() => openEdit(studio)} />
+                <IconButton
+                  label="מחק"
+                  icon="trash"
+                  variant="danger"
+                  onClick={() => void removeStudio(studio.id)}
+                />
+              </div>
             </li>
           ))}
         </ul>

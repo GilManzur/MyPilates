@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button } from '../components/Button'
+import { IconButton } from '../components/IconButton'
 import { Field, TextInput, TextSelect } from '../components/Field'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthSwitcher } from '../components/MonthSwitcher'
@@ -309,16 +310,15 @@ export function CalendarPage() {
             {error && <p className="form-error">{error}</p>}
             <div className="row-actions">
               {editingLesson && (
-                <Button
-                  type="button"
+                <IconButton
+                  label="מחק"
+                  icon="trash"
                   variant="danger"
                   onClick={() => {
                     void removeLesson(editingLesson.id)
                     setOpen(false)
                   }}
-                >
-                  מחק
-                </Button>
+                />
               )}
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 ביטול

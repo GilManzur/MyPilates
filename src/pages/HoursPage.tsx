@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button } from '../components/Button'
+import { IconButton } from '../components/IconButton'
 import { Field, TextArea, TextInput, TextSelect } from '../components/Field'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
@@ -83,7 +84,12 @@ export function HoursPage() {
                     {formatLessonTime(lesson.startAt)} · {lesson.durationHours} שע׳
                   </p>
                 </div>
-                <Button onClick={() => void onConfirmLesson(lesson.id)}>אשר שעות</Button>
+                <IconButton
+                  label="אשר שעות"
+                  icon="check"
+                  variant="primary"
+                  onClick={() => void onConfirmLesson(lesson.id)}
+                />
               </li>
             ))}
           </ul>
@@ -153,9 +159,12 @@ export function HoursPage() {
                     {entry.note ? ` · ${entry.note}` : ''}
                   </p>
                 </div>
-                <Button variant="ghost" onClick={() => void removeEntry(entry.id)}>
-                  מחק
-                </Button>
+                <IconButton
+                  label="מחק"
+                  icon="trash"
+                  variant="danger"
+                  onClick={() => void removeEntry(entry.id)}
+                />
               </li>
             ))}
           </ul>
