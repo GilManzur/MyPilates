@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Button } from '../components/Button'
 import { Field, TextInput, TextSelect } from '../components/Field'
+import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
@@ -29,10 +30,12 @@ export function CalendarPage() {
     [studios],
   )
 
-  const openCreate = () => {
-    const start = new Date()
-    start.setMinutes(0, 0, 0)
-    start.setHours(start.getHours() + 1)
+  const openCreate = (date?: string) => {
+    const start = date ? new Date(`${date}T10:00:00`) : new Date()
+    if (!date) {
+      start.setMinutes(0, 0, 0)
+      start.setHours(start.getHours() + 1)
+    }
     const end = new Date(start)
     end.setHours(end.getHours() + 1)
     setEditingId(null)
@@ -80,6 +83,8 @@ export function CalendarPage() {
     setForm(emptyForm)
   }
 
+  const editingLesson = editingId ? lessons.find((item) => item.id === editingId) : null
+
   return (
     <div className="stack">
       <div className="page-head">
@@ -87,7 +92,7 @@ export function CalendarPage() {
           <p className="eyebrow">יומן חודשי</p>
           <h1>שיעורים</h1>
         </div>
-        <Button onClick={openCreate} disabled={studios.length === 0}>
+        <Button onClick={() => openCreate()} disabled={studios.length === 0}>
           שיעור חדש
         </Button>
       </div>
@@ -100,34 +105,50 @@ export function CalendarPage() {
 
       {loading ? (
         <p className="empty">טוען…</p>
-      ) : lessons.length === 0 ? (
-        <p className="empty panel">אין שיעורים בחודש הזה.</p>
       ) : (
-        <ul className="list panel">
-          {lessons.map((lesson) => (
-            <li key={lesson.id} className="list-item list-item--action">
-              <button type="button" className="list-item__button" onClick={() => openEdit(lesson)}>
-                <span
-                  className="color-dot"
-                  style={{ background: studioMap[lesson.studioId]?.color ?? '#5B7C6A' }}
-                />
-                <span>
-                  <p className="list-item__title">{lesson.title}</p>
-                  <p className="list-item__meta">
-                    {studioMap[lesson.studioId]?.name ?? 'סטודיו'} ·{' '}
-                    {formatLessonTime(lesson.startAt)} · {lesson.durationHours} שע׳
-                  </p>
-                </span>
-                <span className={`badge badge--${lesson.hoursConfirmed ? 'confirmed' : 'pending'}`}>
-                  {lesson.hoursConfirmed ? 'אושר' : lesson.status === 'cancelled' ? 'בוטל' : 'מתוכנן'}
-                </span>
-              </button>
-              <Button variant="ghost" onClick={() => void removeLesson(lesson.id)}>
-                מחק
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <MonthCalendar
+          yearMonth={yearMonth}
+          lessons={lessons}
+          studios={studios}
+          onLessonClick={openEdit}
+          onDayClick={(date) => {
+            if (studios.length === 0) return
+            openCreate(date)
+          }}
+        />
+      )}
+
+      {!loading && lessons.length > 0 && (
+        <section className="panel">
+          <div className="panel__head">
+            <h2>רשימת החודש</h2>
+          </div>
+          <ul className="list">
+            {lessons.map((lesson) => (
+              <li key={lesson.id} className="list-item list-item--action">
+                <button type="button" className="list-item__button" onClick={() => openEdit(lesson)}>
+                  <span
+                    className="color-dot"
+                    style={{ background: studioMap[lesson.studioId]?.color ?? '#5B7C6A' }}
+                  />
+                  <span className="list-item__body">
+                    <p className="list-item__title">{lesson.title}</p>
+                    <p className="list-item__meta">
+                      {studioMap[lesson.studioId]?.name ?? 'סטודיו'} ·{' '}
+                      {formatLessonTime(lesson.startAt)} · {lesson.durationHours} שע׳
+                    </p>
+                  </span>
+                  <span className={`badge badge--${lesson.hoursConfirmed ? 'confirmed' : 'pending'}`}>
+                    {lesson.hoursConfirmed ? 'אושר' : lesson.status === 'cancelled' ? 'בוטל' : 'מתוכנן'}
+                  </span>
+                </button>
+                <Button variant="ghost" onClick={() => void removeLesson(lesson.id)}>
+                  מחק
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {open && (
@@ -175,6 +196,18 @@ export function CalendarPage() {
             </Field>
             {error && <p className="form-error">{error}</p>}
             <div className="row-actions">
+              {editingLesson && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={() => {
+                    void removeLesson(editingLesson.id)
+                    setOpen(false)
+                  }}
+                >
+                  מחק
+                </Button>
+              )}
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 ביטול
               </Button>
