@@ -6,17 +6,33 @@ import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { currentYearMonth } from '../lib/money/calculations'
-import { formatLessonTime, fromLocalInputValue, toLocalInputValue } from '../lib/dates'
+import {
+  formatShortDate,
+  fromLocalDateAndTime,
+  localDateKey,
+  localTimeFromIso,
+} from '../lib/dates'
 import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
 import type { Lesson } from '../types'
 
 const emptyForm = {
   studioId: '',
   title: '',
-  startAt: '',
-  endAt: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  dateLocked: false,
   weekly: false,
   untilDate: '',
+}
+
+function nextHourSlot(now = new Date()) {
+  const start = new Date(now)
+  start.setMinutes(0, 0, 0)
+  start.setHours(start.getHours() + 1)
+  const end = new Date(start)
+  end.setHours(end.getHours() + 1)
+  return { start, end }
 }
 
 export function CalendarPage() {
@@ -29,37 +45,42 @@ export function CalendarPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const studioMap = useMemo(
-    () => Object.fromEntries(studios.map((studio) => [studio.id, studio])),
-    [studios],
-  )
-
   const weeklyCount = useMemo(() => {
-    if (!form.weekly || !form.startAt || !form.endAt || !form.untilDate) return 0
-    const startAt = fromLocalInputValue(form.startAt)
-    const endAt = fromLocalInputValue(form.endAt)
+    if (!form.weekly || !form.date || !form.startTime || !form.endTime || !form.untilDate) return 0
+    const startAt = fromLocalDateAndTime(form.date, form.startTime)
+    const endAt = fromLocalDateAndTime(form.date, form.endTime)
     if (new Date(endAt) <= new Date(startAt)) return 0
     return buildWeeklyOccurrences(startAt, endAt, form.untilDate).length
-  }, [form.weekly, form.startAt, form.endAt, form.untilDate])
+  }, [form.weekly, form.date, form.startTime, form.endTime, form.untilDate])
 
   const openCreate = (date?: string) => {
-    const start = date ? new Date(`${date}T10:00:00`) : new Date()
-    if (!date) {
-      start.setMinutes(0, 0, 0)
-      start.setHours(start.getHours() + 1)
+    if (date) {
+      setEditingId(null)
+      setForm({
+        studioId: studios[0]?.id ?? '',
+        title: 'שיעור פילאטיס',
+        date,
+        startTime: '10:00',
+        endTime: '11:00',
+        dateLocked: true,
+        weekly: false,
+        untilDate: defaultWeeklyUntilDate(fromLocalDateAndTime(date, '10:00')),
+      })
+    } else {
+      const { start, end } = nextHourSlot()
+      const dateKey = localDateKey(start.toISOString())
+      setEditingId(null)
+      setForm({
+        studioId: studios[0]?.id ?? '',
+        title: 'שיעור פילאטיס',
+        date: dateKey,
+        startTime: localTimeFromIso(start.toISOString()),
+        endTime: localTimeFromIso(end.toISOString()),
+        dateLocked: false,
+        weekly: false,
+        untilDate: defaultWeeklyUntilDate(start.toISOString()),
+      })
     }
-    const end = new Date(start)
-    end.setHours(end.getHours() + 1)
-    const startIso = start.toISOString()
-    setEditingId(null)
-    setForm({
-      studioId: studios[0]?.id ?? '',
-      title: 'שיעור פילאטיס',
-      startAt: toLocalInputValue(startIso),
-      endAt: toLocalInputValue(end.toISOString()),
-      weekly: false,
-      untilDate: defaultWeeklyUntilDate(startIso),
-    })
     setError('')
     setOpen(true)
   }
@@ -69,8 +90,10 @@ export function CalendarPage() {
     setForm({
       studioId: lesson.studioId,
       title: lesson.title,
-      startAt: toLocalInputValue(lesson.startAt),
-      endAt: toLocalInputValue(lesson.endAt),
+      date: localDateKey(lesson.startAt),
+      startTime: localTimeFromIso(lesson.startAt),
+      endTime: localTimeFromIso(lesson.endAt),
+      dateLocked: false,
       weekly: false,
       untilDate: '',
     })
@@ -85,8 +108,12 @@ export function CalendarPage() {
       setError('בחרי סטודיו')
       return
     }
-    const startAt = fromLocalInputValue(form.startAt)
-    const endAt = fromLocalInputValue(form.endAt)
+    if (!form.date || !form.startTime || !form.endTime) {
+      setError('בחרי תאריך ושעות')
+      return
+    }
+    const startAt = fromLocalDateAndTime(form.date, form.startTime)
+    const endAt = fromLocalDateAndTime(form.date, form.endTime)
     if (new Date(endAt) <= new Date(startAt)) {
       setError('שעת הסיום חייבת להיות אחרי ההתחלה')
       return
@@ -161,40 +188,6 @@ export function CalendarPage() {
         />
       )}
 
-      {!loading && lessons.length > 0 && (
-        <section className="panel">
-          <div className="panel__head">
-            <h2>רשימת החודש</h2>
-          </div>
-          <ul className="list">
-            {lessons.map((lesson) => (
-              <li key={lesson.id} className="list-item list-item--action">
-                <button type="button" className="list-item__button" onClick={() => openEdit(lesson)}>
-                  <span
-                    className="color-dot"
-                    style={{ background: studioMap[lesson.studioId]?.color ?? '#5B7C6A' }}
-                  />
-                  <span className="list-item__body">
-                    <p className="list-item__title">{lesson.title}</p>
-                    <p className="list-item__meta">
-                      {studioMap[lesson.studioId]?.name ?? 'סטודיו'} ·{' '}
-                      {formatLessonTime(lesson.startAt)} · {lesson.durationHours} שע׳
-                      {lesson.seriesId ? ' · קבוע' : ''}
-                    </p>
-                  </span>
-                  <span className={`badge badge--${lesson.hoursConfirmed ? 'confirmed' : 'pending'}`}>
-                    {lesson.hoursConfirmed ? 'אושר' : lesson.status === 'cancelled' ? 'בוטל' : 'מתוכנן'}
-                  </span>
-                </button>
-                <Button variant="ghost" onClick={() => void removeLesson(lesson.id)}>
-                  מחק
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {open && (
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
@@ -222,32 +215,58 @@ export function CalendarPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               />
             </Field>
-            <Field label="התחלה">
-              <TextInput
-                type="datetime-local"
-                required
-                value={form.startAt}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setForm((prev) => ({
-                    ...prev,
-                    startAt: value,
-                    untilDate:
-                      prev.weekly && value
-                        ? defaultWeeklyUntilDate(fromLocalInputValue(value))
-                        : prev.untilDate,
-                  }))
-                }}
-              />
-            </Field>
-            <Field label="סיום">
-              <TextInput
-                type="datetime-local"
-                required
-                value={form.endAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, endAt: e.target.value }))}
-              />
-            </Field>
+            {form.dateLocked ? (
+              <p className="form-locked-date">
+                תאריך: <strong>{formatShortDate(form.date)}</strong>
+              </p>
+            ) : (
+              <Field label="תאריך">
+                <TextInput
+                  type="date"
+                  required
+                  value={form.date}
+                  onChange={(e) => {
+                    const date = e.target.value
+                    setForm((prev) => ({
+                      ...prev,
+                      date,
+                      untilDate:
+                        prev.weekly && date && prev.startTime
+                          ? defaultWeeklyUntilDate(fromLocalDateAndTime(date, prev.startTime))
+                          : prev.untilDate,
+                    }))
+                  }}
+                />
+              </Field>
+            )}
+            <div className="time-fields">
+              <Field label="התחלה">
+                <TextInput
+                  type="time"
+                  required
+                  value={form.startTime}
+                  onChange={(e) => {
+                    const startTime = e.target.value
+                    setForm((prev) => ({
+                      ...prev,
+                      startTime,
+                      untilDate:
+                        prev.weekly && prev.date && startTime
+                          ? defaultWeeklyUntilDate(fromLocalDateAndTime(prev.date, startTime))
+                          : prev.untilDate,
+                    }))
+                  }}
+                />
+              </Field>
+              <Field label="סיום">
+                <TextInput
+                  type="time"
+                  required
+                  value={form.endTime}
+                  onChange={(e) => setForm((prev) => ({ ...prev, endTime: e.target.value }))}
+                />
+              </Field>
+            </div>
             {!editingId && (
               <>
                 <label className="check-field">
@@ -260,8 +279,8 @@ export function CalendarPage() {
                         ...prev,
                         weekly,
                         untilDate:
-                          weekly && prev.startAt
-                            ? defaultWeeklyUntilDate(fromLocalInputValue(prev.startAt))
+                          weekly && prev.date && prev.startTime
+                            ? defaultWeeklyUntilDate(fromLocalDateAndTime(prev.date, prev.startTime))
                             : prev.untilDate,
                       }))
                     }}
@@ -277,7 +296,7 @@ export function CalendarPage() {
                       type="date"
                       required
                       value={form.untilDate}
-                      min={form.startAt.slice(0, 10)}
+                      min={form.date || undefined}
                       onChange={(e) => setForm((prev) => ({ ...prev, untilDate: e.target.value }))}
                     />
                   </Field>

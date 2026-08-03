@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 import {
   buildMonthGrid,
+  expandedWeekStartKey,
   formatLessonClock,
   localDateKey,
   todayLocalKey,
+  weekDateKeys,
   WEEKDAY_LABELS_HE,
 } from '../lib/dates'
 import type { Lesson, Studio } from '../types'
@@ -37,6 +39,12 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
     return map
   }, [lessons])
 
+  const expandedWeekDates = useMemo(() => {
+    const weekKeys = weekDateKeys(expandedWeekStartKey())
+    const hasCrowdedDay = weekKeys.some((key) => (lessonsByDate[key]?.length ?? 0) > 1)
+    return hasCrowdedDay ? new Set(weekKeys) : new Set<string>()
+  }, [lessonsByDate])
+
   const today = todayLocalKey()
 
   return (
@@ -54,11 +62,14 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
           const dayLessons = lessonsByDate[cell.date] ?? []
           const dayNum = Number(cell.date.slice(8, 10))
           const isToday = cell.date === today
+          const isExpandedWeek = expandedWeekDates.has(cell.date)
+          const visibleLessons = isExpandedWeek ? dayLessons : dayLessons.slice(0, 3)
+          const hiddenCount = isExpandedWeek ? 0 : Math.max(0, dayLessons.length - 3)
 
           return (
             <div
               key={cell.date}
-              className={`month-calendar__cell${cell.inMonth ? '' : ' is-outside'}${isToday ? ' is-today' : ''}`}
+              className={`month-calendar__cell${cell.inMonth ? '' : ' is-outside'}${isToday ? ' is-today' : ''}${isExpandedWeek ? ' is-expanded-week' : ''}`}
             >
               <button
                 type="button"
@@ -69,7 +80,7 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
                 <span className="month-calendar__day-num">{dayNum}</span>
               </button>
               <div className="month-calendar__events">
-                {dayLessons.slice(0, 3).map((lesson) => {
+                {visibleLessons.map((lesson) => {
                   const color = studioMap[lesson.studioId]?.color ?? '#5B7C6A'
                   return (
                     <button
@@ -89,8 +100,8 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
                     </button>
                   )
                 })}
-                {dayLessons.length > 3 && (
-                  <span className="month-calendar__more">+{dayLessons.length - 3}</span>
+                {hiddenCount > 0 && (
+                  <span className="month-calendar__more">+{hiddenCount}</span>
                 )}
               </div>
             </div>

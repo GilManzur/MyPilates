@@ -32,6 +32,44 @@ export function fromLocalInputValue(value: string): string {
   return new Date(value).toISOString()
 }
 
+/** Combine local YYYY-MM-DD + HH:mm into an ISO datetime. */
+export function fromLocalDateAndTime(date: string, time: string): string {
+  return fromLocalInputValue(`${date}T${time}`)
+}
+
+export function localTimeFromIso(iso: string): string {
+  const date = parseISO(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+/**
+ * Sunday-start week to expand in the month grid.
+ * If today is Saturday, returns next week's Sunday; otherwise this week's Sunday.
+ */
+export function expandedWeekStartKey(date = new Date()): string {
+  const d = new Date(date)
+  d.setHours(12, 0, 0, 0)
+  const day = d.getDay()
+  if (day === 6) {
+    d.setDate(d.getDate() + 1)
+  } else {
+    d.setDate(d.getDate() - day)
+  }
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+export function weekDateKeys(weekStartKey: string): string[] {
+  const start = new Date(`${weekStartKey}T12:00:00`)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  })
+}
+
 export function dateOnly(isoOrDate: string): string {
   return isoOrDate.slice(0, 10)
 }
