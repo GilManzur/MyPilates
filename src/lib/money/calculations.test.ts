@@ -134,4 +134,14 @@ describe('buildMonthSummaries', () => {
     expect(pendingAmount(summaries)).toBe(180)
     expect(totalAmount(summaries)).toBe(705)
   })
+
+  it('omits studios with no hours in the selected month', () => {
+    const summaries = buildMonthSummaries(studios, entries, [], '2026-07')
+    expect(summaries).toHaveLength(1)
+    expect(summaries[0]).toMatchObject({
+      studioId: 's1',
+      totalHours: 3,
+      amount: 450,
+    })
+  })
 })

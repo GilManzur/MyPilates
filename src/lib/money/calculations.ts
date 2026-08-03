@@ -45,21 +45,23 @@ export function buildMonthSummaries(
   yearMonth: string,
 ): StudioMonthSummary[] {
   const activeStudios = studios.filter((studio) => studio.active)
-  return activeStudios.map((studio) => {
-    const totalHours = totalHoursForStudio(entries, studio.id, yearMonth)
-    const payment = payments.find(
-      (item) => item.studioId === studio.id && item.yearMonth === yearMonth,
-    )
-    return {
-      studioId: studio.id,
-      studioName: studio.name,
-      hourlyRate: studio.hourlyRate,
-      totalHours,
-      amount: amountForHours(totalHours, studio.hourlyRate),
-      paymentStatus: payment?.status ?? 'pending',
-      paymentId: payment?.id,
-    }
-  })
+  return activeStudios
+    .map((studio) => {
+      const totalHours = totalHoursForStudio(entries, studio.id, yearMonth)
+      const payment = payments.find(
+        (item) => item.studioId === studio.id && item.yearMonth === yearMonth,
+      )
+      return {
+        studioId: studio.id,
+        studioName: studio.name,
+        hourlyRate: studio.hourlyRate,
+        totalHours,
+        amount: amountForHours(totalHours, studio.hourlyRate),
+        paymentStatus: payment?.status ?? 'pending',
+        paymentId: payment?.id,
+      }
+    })
+    .filter((summary) => summary.totalHours > 0)
 }
 
 export function totalAmount(summaries: StudioMonthSummary[]): number {

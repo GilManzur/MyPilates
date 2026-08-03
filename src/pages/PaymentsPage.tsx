@@ -41,7 +41,7 @@ export function PaymentsPage() {
       </section>
 
       {summaries.length === 0 ? (
-        <p className="empty panel">אין נתונים לחודש זה.</p>
+        <p className="empty panel">אין סטודיוים עם שעות בחודש זה — אין מה לכלול בתשלום.</p>
       ) : (
         <ul className="list panel">
           {summaries.map((summary) => (
