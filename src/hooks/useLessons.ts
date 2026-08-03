@@ -2,8 +2,20 @@ import { useCallback, useEffect, useState } from 'react'
 import { getRepository } from '../lib/data'
 import { createId } from '../lib/data/types'
 import { hoursFromLesson } from '../lib/money/calculations'
+import { buildWeeklyOccurrences } from '../lib/recurrence'
 import type { Lesson } from '../types'
 import { useAuth } from '../contexts/AuthContext'
+
+type LessonInput = {
+  id?: string
+  studioId: string
+  title: string
+  startAt: string
+  endAt: string
+  status?: Lesson['status']
+  hoursConfirmed?: boolean
+  seriesId?: string
+}
 
 export function useLessons(yearMonth: string) {
   const { user } = useAuth()
@@ -26,23 +38,13 @@ export function useLessons(yearMonth: string) {
     void refresh()
   }, [refresh])
 
-  const saveLesson = async (input: {
-    id?: string
-    studioId: string
-    title: string
-    startAt: string
-    endAt: string
-    status?: Lesson['status']
-    hoursConfirmed?: boolean
-  }) => {
-    if (!user) return
-    const existing = input.id ? lessons.find((l) => l.id === input.id) : undefined
+  const buildLesson = (input: LessonInput, existing?: Lesson): Lesson => {
     const durationHours = hoursFromLesson({
       startAt: input.startAt,
       endAt: input.endAt,
       durationHours: 0,
     })
-    const lesson: Lesson = {
+    return {
       id: input.id ?? createId('lesson'),
       studioId: input.studioId,
       title: input.title.trim() || 'שיעור פילאטיס',
@@ -52,10 +54,54 @@ export function useLessons(yearMonth: string) {
       status: input.status ?? existing?.status ?? 'scheduled',
       hoursConfirmed: input.hoursConfirmed ?? existing?.hoursConfirmed ?? false,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
+      ...(input.seriesId || existing?.seriesId
+        ? { seriesId: input.seriesId ?? existing?.seriesId }
+        : {}),
     }
+  }
+
+  const saveLesson = async (input: LessonInput) => {
+    if (!user) return
+    const existing = input.id ? lessons.find((l) => l.id === input.id) : undefined
+    const lesson = buildLesson(input, existing)
     await getRepository().upsertLesson(user.uid, lesson)
     await refresh()
     return lesson
+  }
+
+  /**
+   * Creates one lesson per week from startAt through untilDate (inclusive).
+   * Returns the number of lessons created.
+   */
+  const saveWeeklyLessons = async (input: {
+    studioId: string
+    title: string
+    startAt: string
+    endAt: string
+    untilDate: string
+  }) => {
+    if (!user) return 0
+    const occurrences = buildWeeklyOccurrences(input.startAt, input.endAt, input.untilDate)
+    if (occurrences.length === 0) return 0
+
+    const seriesId = createId('series')
+    const createdAt = new Date().toISOString()
+    const repo = getRepository()
+
+    for (const occurrence of occurrences) {
+      const lesson = buildLesson({
+        studioId: input.studioId,
+        title: input.title,
+        startAt: occurrence.startAt,
+        endAt: occurrence.endAt,
+        seriesId,
+      })
+      lesson.createdAt = createdAt
+      await repo.upsertLesson(user.uid, lesson)
+    }
+
+    await refresh()
+    return occurrences.length
   }
 
   const removeLesson = async (lessonId: string) => {
@@ -64,5 +110,5 @@ export function useLessons(yearMonth: string) {
     await refresh()
   }
 
-  return { lessons, loading, refresh, saveLesson, removeLesson }
+  return { lessons, loading, refresh, saveLesson, saveWeeklyLessons, removeLesson }
 }
