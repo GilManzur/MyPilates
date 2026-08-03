@@ -81,7 +81,7 @@ export function HomePage() {
           <Link to="/payments">תשלומים</Link>
         </div>
         {summaries.length === 0 ? (
-          <p className="empty">הוסיפי סטודיו כדי להתחיל לעקוב אחרי השכר.</p>
+          <p className="empty">הוסיפי סטודיו בהגדרות כדי להתחיל לעקוב אחרי השכר.</p>
         ) : (
           <ul className="list">
             {summaries.map((summary) => (

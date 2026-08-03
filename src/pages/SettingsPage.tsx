@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { Logo } from '../components/Logo'
+import { StudiosManager } from '../components/StudiosManager'
 import { useAuth } from '../contexts/AuthContext'
 import { useLessons } from '../hooks/useLessons'
 import { isLocalMode } from '../lib/data'
@@ -17,6 +18,11 @@ export function SettingsPage() {
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     setInstallHint(isIos && !isStandalone)
+  }, [])
+
+  useEffect(() => {
+    if (window.location.hash !== '#studios') return
+    document.getElementById('studios')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   const onEnableNotifications = async () => {
@@ -59,6 +65,8 @@ export function SettingsPage() {
           {isLocalMode() && <span className="badge badge--pending">מצב מקומי</span>}
         </div>
       </section>
+
+      <StudiosManager />
 
       <section className="panel stack-sm">
         <h2>נוטיפיקציות</h2>

@@ -6,7 +6,6 @@ const links = [
   { to: '/', label: 'בית', icon: '⌂' },
   { to: '/calendar', label: 'יומן', icon: '▦' },
   { to: '/hours', label: 'שעות', icon: '◷' },
-  { to: '/studios', label: 'סטודיו', icon: '◎' },
   { to: '/payments', label: 'תשלום', icon: '₪' },
 ]
 

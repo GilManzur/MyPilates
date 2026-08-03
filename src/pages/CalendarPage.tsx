@@ -95,7 +95,7 @@ export function CalendarPage() {
       <MonthSwitcher yearMonth={yearMonth} onChange={setYearMonth} />
 
       {studios.length === 0 && (
-        <p className="empty panel">קודם הוסיפי סטודיו במסך הסטודיוים.</p>
+        <p className="empty panel">קודם הוסיפי סטודיו בהגדרות.</p>
       )}
 
       {loading ? (
