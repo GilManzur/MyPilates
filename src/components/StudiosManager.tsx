@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from './Button'
 import { Field, TextInput } from './Field'
 import { useStudios } from '../hooks/useStudios'
+import { STUDIO_COLORS } from '../lib/data/types'
 import { formatILS } from '../lib/money/calculations'
 import type { Studio } from '../types'
 
@@ -11,11 +12,13 @@ export function StudiosManager() {
   const [editing, setEditing] = useState<Studio | null>(null)
   const [name, setName] = useState('')
   const [hourlyRate, setHourlyRate] = useState('150')
+  const [color, setColor] = useState(STUDIO_COLORS[0])
 
   const openCreate = () => {
     setEditing(null)
     setName('')
     setHourlyRate('150')
+    setColor(STUDIO_COLORS[studios.length % STUDIO_COLORS.length])
     setOpen(true)
   }
 
@@ -23,6 +26,7 @@ export function StudiosManager() {
     setEditing(studio)
     setName(studio.name)
     setHourlyRate(String(studio.hourlyRate))
+    setColor(studio.color)
     setOpen(true)
   }
 
@@ -34,7 +38,7 @@ export function StudiosManager() {
       id: editing?.id,
       name,
       hourlyRate: rate,
-      color: editing?.color,
+      color,
     })
     setOpen(false)
   }
@@ -45,7 +49,7 @@ export function StudiosManager() {
         <h2>ניהול סטודיוים</h2>
         <Button onClick={openCreate}>סטודיו חדש</Button>
       </div>
-      <p className="hint">שם ותעריף שעתי לכל סטודיו.</p>
+      <p className="hint">שם, תעריף שעתי וצבע לזיהוי ביומן החודשי.</p>
 
       {loading ? (
         <p className="empty">טוען…</p>
@@ -90,6 +94,22 @@ export function StudiosManager() {
                 value={hourlyRate}
                 onChange={(e) => setHourlyRate(e.target.value)}
               />
+            </Field>
+            <Field label="צבע ביומן">
+              <div className="color-picker" role="radiogroup" aria-label="צבע סטודיו">
+                {STUDIO_COLORS.map((swatch) => (
+                  <button
+                    key={swatch}
+                    type="button"
+                    role="radio"
+                    aria-checked={color === swatch}
+                    className={`color-picker__swatch${color === swatch ? ' is-selected' : ''}`}
+                    style={{ background: swatch }}
+                    onClick={() => setColor(swatch)}
+                    title={swatch}
+                  />
+                ))}
+              </div>
             </Field>
             <div className="row-actions">
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
