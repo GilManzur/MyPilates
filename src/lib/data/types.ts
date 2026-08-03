@@ -21,4 +21,18 @@ export function createId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().slice(0, 8)}`
 }
 
-export const STUDIO_COLORS = ['#5B7C6A', '#6A8A9B', '#8B6F5C', '#6B7B8A', '#7A6B8A', '#5C7A6F']
+/** Warm palette for studio calendar chips. */
+export const STUDIO_COLORS = [
+  '#C4785A', // terracotta
+  '#B56B4A', // clay
+  '#C4A574', // sand
+  '#D4896A', // deep peach
+  '#C49A3C', // mustard
+  '#A67C52', // golden brown
+  '#B87A7A', // warm rose
+  '#A65D3F', // burnt sienna
+  '#C9922A', // amber
+  '#8B7355', // olive brown
+  '#B8734D', // copper
+  '#C97B6B', // soft coral
+]
