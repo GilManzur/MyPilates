@@ -1,6 +1,6 @@
-import { NavLink } from 'react-router-dom'
-import { Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { Logo } from './Logo'
 
 const links = [
   { to: '/', label: 'בית', icon: '⌂' },
@@ -17,7 +17,7 @@ export function AppShell() {
     <div className="app-shell">
       <header className="top-bar">
         <div className="top-bar__brand">
-          <span className="brand-mark" aria-hidden="true" />
+          <Logo size={40} />
           <div>
             <p className="brand-name">MyPilates</p>
             <p className="brand-sub">{user?.displayName}</p>
