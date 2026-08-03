@@ -13,8 +13,8 @@ export function MonthSwitcher({
       <Button
         variant="ghost"
         className="month-switcher__nav"
-        aria-label="חודש קודם"
-        onClick={() => onChange(shiftYearMonth(yearMonth, -1))}
+        aria-label="חודש הבא"
+        onClick={() => onChange(shiftYearMonth(yearMonth, 1))}
       >
         ‹
       </Button>
@@ -22,8 +22,8 @@ export function MonthSwitcher({
       <Button
         variant="ghost"
         className="month-switcher__nav"
-        aria-label="חודש הבא"
-        onClick={() => onChange(shiftYearMonth(yearMonth, 1))}
+        aria-label="חודש קודם"
+        onClick={() => onChange(shiftYearMonth(yearMonth, -1))}
       >
         ›
       </Button>
