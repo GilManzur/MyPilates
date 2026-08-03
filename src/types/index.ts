@@ -14,6 +14,8 @@ export interface Studio {
   hourlyRate: number
   currency: 'ILS'
   color: string
+  /** Fixed pay per work day at this studio. 0 = no travel pay. */
+  travelPay: number
   active: boolean
   createdAt: string
 }
@@ -57,6 +59,10 @@ export interface StudioMonthSummary {
   studioName: string
   hourlyRate: number
   totalHours: number
+  travelPay: number
+  travelDays: number
+  travelAmount: number
+  hoursAmount: number
   amount: number
   paymentStatus: PaymentStatus
   paymentId?: string

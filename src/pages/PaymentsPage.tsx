@@ -55,6 +55,9 @@ export function PaymentsPage() {
                   <p className="list-item__title">{summary.studioName}</p>
                   <p className="list-item__meta">
                     {summary.totalHours} שעות × {formatILS(summary.hourlyRate)}
+                    {summary.travelAmount > 0
+                      ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
+                      : ''}
                   </p>
                 </div>
                 <p className="amount">{formatILS(summary.amount)}</p>

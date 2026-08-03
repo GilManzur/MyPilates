@@ -13,12 +13,16 @@ export function StudiosManager() {
   const [name, setName] = useState('')
   const [hourlyRate, setHourlyRate] = useState('150')
   const [color, setColor] = useState(STUDIO_COLORS[0])
+  const [travelEnabled, setTravelEnabled] = useState(false)
+  const [travelPay, setTravelPay] = useState('')
 
   const openCreate = () => {
     setEditing(null)
     setName('')
     setHourlyRate('150')
     setColor(STUDIO_COLORS[studios.length % STUDIO_COLORS.length])
+    setTravelEnabled(false)
+    setTravelPay('')
     setOpen(true)
   }
 
@@ -27,6 +31,9 @@ export function StudiosManager() {
     setName(studio.name)
     setHourlyRate(String(studio.hourlyRate))
     setColor(studio.color)
+    const hasTravel = (studio.travelPay ?? 0) > 0
+    setTravelEnabled(hasTravel)
+    setTravelPay(hasTravel ? String(studio.travelPay) : '')
     setOpen(true)
   }
 
@@ -34,11 +41,14 @@ export function StudiosManager() {
     event.preventDefault()
     const rate = Number(hourlyRate)
     if (!name.trim() || !rate || rate <= 0) return
+    const travelValue = travelEnabled ? Number(travelPay) : 0
+    if (travelEnabled && (!travelValue || travelValue <= 0)) return
     await saveStudio({
       id: editing?.id,
       name,
       hourlyRate: rate,
       color,
+      travelPay: travelEnabled ? travelValue : 0,
     })
     setOpen(false)
   }
@@ -63,7 +73,12 @@ export function StudiosManager() {
                 <span className="color-dot" style={{ background: studio.color }} />
                 <span className="list-item__body">
                   <p className="list-item__title">{studio.name}</p>
-                  <p className="list-item__meta">{formatILS(studio.hourlyRate)} לשעה</p>
+                  <p className="list-item__meta">
+                    {formatILS(studio.hourlyRate)} לשעה
+                    {(studio.travelPay ?? 0) > 0
+                      ? ` · נסיעה ${formatILS(studio.travelPay)} ליום`
+                      : ''}
+                  </p>
                 </span>
               </button>
               <Button variant="ghost" onClick={() => void removeStudio(studio.id)}>
@@ -111,6 +126,34 @@ export function StudiosManager() {
                 ))}
               </div>
             </Field>
+            {travelEnabled ? (
+              <div className="stack-sm">
+                <Field label="תשלום נסיעה ליום (₪)">
+                  <TextInput
+                    type="number"
+                    min="1"
+                    step="1"
+                    required
+                    value={travelPay}
+                    onChange={(e) => setTravelPay(e.target.value)}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setTravelEnabled(false)
+                    setTravelPay('')
+                  }}
+                >
+                  ללא נסיעות
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" variant="secondary" onClick={() => setTravelEnabled(true)}>
+                הוסף נסיעות
+              </Button>
+            )}
             <div className="row-actions">
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 ביטול

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   amountForHours,
+  amountForTravel,
   buildMonthSummaries,
   filterHoursForMonth,
   hoursFromLesson,
   pendingAmount,
   totalAmount,
   totalHoursForStudio,
+  workDaysForStudio,
 } from './calculations'
 import type { HourEntry, Payment, Studio } from '../../types'
 
@@ -17,6 +19,7 @@ const studios: Studio[] = [
     hourlyRate: 150,
     currency: 'ILS',
     color: '#5B7C6A',
+    travelPay: 0,
     active: true,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -26,6 +29,7 @@ const studios: Studio[] = [
     hourlyRate: 180,
     currency: 'ILS',
     color: '#6A8A9B',
+    travelPay: 0,
     active: true,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -102,6 +106,61 @@ describe('month hour aggregations', () => {
   it('calculates amount from hours and rate', () => {
     expect(amountForHours(3.5, 150)).toBe(525)
     expect(amountForHours(1, 180)).toBe(180)
+  })
+})
+
+describe('travel pay', () => {
+  it('counts unique work days once even with multiple hour entries', () => {
+    const sameDay: HourEntry[] = [
+      {
+        id: 'a',
+        studioId: 's1',
+        date: '2026-08-05',
+        hours: 1,
+        source: 'manual',
+        createdAt: '2026-08-05T10:00:00.000Z',
+      },
+      {
+        id: 'b',
+        studioId: 's1',
+        date: '2026-08-05',
+        hours: 1,
+        source: 'manual',
+        createdAt: '2026-08-05T12:00:00.000Z',
+      },
+      {
+        id: 'c',
+        studioId: 's1',
+        date: '2026-08-06',
+        hours: 2,
+        source: 'manual',
+        createdAt: '2026-08-06T10:00:00.000Z',
+      },
+    ]
+    expect(workDaysForStudio(sameDay, 's1', '2026-08')).toBe(2)
+    expect(amountForTravel(2, 30)).toBe(60)
+  })
+
+  it('adds travel pay once per work day to month summary', () => {
+    const withTravel: Studio[] = [{ ...studios[0], travelPay: 30 }, studios[1]]
+    const summaries = buildMonthSummaries(withTravel, entries, [], '2026-08')
+    const s1 = summaries.find((item) => item.studioId === 's1')
+    expect(s1).toMatchObject({
+      totalHours: 3.5,
+      hoursAmount: 525,
+      travelDays: 2,
+      travelAmount: 60,
+      amount: 585,
+    })
+  })
+
+  it('skips travel when travelPay is zero', () => {
+    const summaries = buildMonthSummaries(studios, entries, [], '2026-08')
+    expect(summaries[0]).toMatchObject({
+      travelDays: 0,
+      travelAmount: 0,
+      amount: 525,
+    })
   })
 })
 

@@ -34,6 +34,30 @@ export function amountForHours(hours: number, hourlyRate: number): number {
   return Math.round(hours * hourlyRate * 100) / 100
 }
 
+export function studioTravelPay(studio: Pick<Studio, 'travelPay'>): number {
+  const value = studio.travelPay ?? 0
+  return value > 0 ? value : 0
+}
+
+/** Unique work days with at least one hour entry for the studio in the month. */
+export function workDaysForStudio(
+  entries: HourEntry[],
+  studioId: string,
+  yearMonth: string,
+): number {
+  const days = new Set(
+    filterHoursForMonth(entries, yearMonth)
+      .filter((entry) => entry.studioId === studioId)
+      .map((entry) => entry.date.slice(0, 10)),
+  )
+  return days.size
+}
+
+export function amountForTravel(travelDays: number, travelPay: number): number {
+  if (travelPay <= 0 || travelDays <= 0) return 0
+  return Math.round(travelDays * travelPay * 100) / 100
+}
+
 export function paymentDocId(studioId: string, yearMonth: string): string {
   return `${studioId}_${yearMonth}`
 }
@@ -48,6 +72,10 @@ export function buildMonthSummaries(
   return activeStudios
     .map((studio) => {
       const totalHours = totalHoursForStudio(entries, studio.id, yearMonth)
+      const travelPay = studioTravelPay(studio)
+      const travelDays = travelPay > 0 ? workDaysForStudio(entries, studio.id, yearMonth) : 0
+      const hoursAmount = amountForHours(totalHours, studio.hourlyRate)
+      const travelAmount = amountForTravel(travelDays, travelPay)
       const payment = payments.find(
         (item) => item.studioId === studio.id && item.yearMonth === yearMonth,
       )
@@ -56,7 +84,11 @@ export function buildMonthSummaries(
         studioName: studio.name,
         hourlyRate: studio.hourlyRate,
         totalHours,
-        amount: amountForHours(totalHours, studio.hourlyRate),
+        travelPay,
+        travelDays,
+        travelAmount,
+        hoursAmount,
+        amount: Math.round((hoursAmount + travelAmount) * 100) / 100,
         paymentStatus: payment?.status ?? 'pending',
         paymentId: payment?.id,
       }
