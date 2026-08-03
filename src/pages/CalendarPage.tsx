@@ -7,12 +7,7 @@ import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { currentYearMonth } from '../lib/money/calculations'
-import {
-  formatShortDate,
-  fromLocalDateAndTime,
-  localDateKey,
-  localTimeFromIso,
-} from '../lib/dates'
+import { formatShortDate, fromLocalDateAndTime, localDateKey, localTimeFromIso } from '../lib/dates'
 import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
 import type { Lesson } from '../types'
 
@@ -27,15 +22,6 @@ const emptyForm = {
   untilDate: '',
 }
 
-function nextHourSlot(now = new Date()) {
-  const start = new Date(now)
-  start.setMinutes(0, 0, 0)
-  start.setHours(start.getHours() + 1)
-  const end = new Date(start)
-  end.setHours(end.getHours() + 1)
-  return { start, end }
-}
-
 export function CalendarPage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
   const { studios } = useStudios()
@@ -45,6 +31,7 @@ export function CalendarPage() {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [pickingDay, setPickingDay] = useState(false)
 
   const weeklyCount = useMemo(() => {
     if (!form.weekly || !form.date || !form.startTime || !form.endTime || !form.untilDate) return 0
@@ -54,34 +41,27 @@ export function CalendarPage() {
     return buildWeeklyOccurrences(startAt, endAt, form.untilDate).length
   }, [form.weekly, form.date, form.startTime, form.endTime, form.untilDate])
 
-  const openCreate = (date?: string) => {
-    if (date) {
-      setEditingId(null)
-      setForm({
-        studioId: studios[0]?.id ?? '',
-        title: 'שיעור פילאטיס',
-        date,
-        startTime: '10:00',
-        endTime: '11:00',
-        dateLocked: true,
-        weekly: false,
-        untilDate: defaultWeeklyUntilDate(fromLocalDateAndTime(date, '10:00')),
-      })
-    } else {
-      const { start, end } = nextHourSlot()
-      const dateKey = localDateKey(start.toISOString())
-      setEditingId(null)
-      setForm({
-        studioId: studios[0]?.id ?? '',
-        title: 'שיעור פילאטיס',
-        date: dateKey,
-        startTime: localTimeFromIso(start.toISOString()),
-        endTime: localTimeFromIso(end.toISOString()),
-        dateLocked: false,
-        weekly: false,
-        untilDate: defaultWeeklyUntilDate(start.toISOString()),
-      })
-    }
+  const startPickingDay = () => {
+    if (studios.length === 0) return
+    setOpen(false)
+    setEditingId(null)
+    setPickingDay((prev) => !prev)
+    setError('')
+  }
+
+  const openCreateOnDate = (date: string) => {
+    setPickingDay(false)
+    setEditingId(null)
+    setForm({
+      studioId: studios[0]?.id ?? '',
+      title: 'שיעור פילאטיס',
+      date,
+      startTime: '10:00',
+      endTime: '11:00',
+      dateLocked: true,
+      weekly: false,
+      untilDate: defaultWeeklyUntilDate(fromLocalDateAndTime(date, '10:00')),
+    })
     setError('')
     setOpen(true)
   }
@@ -163,8 +143,12 @@ export function CalendarPage() {
           <p className="eyebrow">יומן חודשי</p>
           <h1>שיעורים</h1>
         </div>
-        <Button onClick={() => openCreate()} disabled={studios.length === 0}>
-          שיעור חדש
+        <Button
+          onClick={startPickingDay}
+          disabled={studios.length === 0}
+          variant={pickingDay ? 'secondary' : 'primary'}
+        >
+          {pickingDay ? 'ביטול בחירה' : 'שיעור חדש'}
         </Button>
       </div>
 
@@ -174,6 +158,10 @@ export function CalendarPage() {
         <p className="empty panel">קודם הוסיפי סטודיו בהגדרות.</p>
       )}
 
+      {pickingDay && (
+        <p className="toast">בחרי תאריך בלוח כדי להוסיף שיעור</p>
+      )}
+
       {loading ? (
         <p className="empty">טוען…</p>
       ) : (
@@ -181,11 +169,12 @@ export function CalendarPage() {
           yearMonth={yearMonth}
           lessons={lessons}
           studios={studios}
-          onLessonClick={openEdit}
-          onDayClick={(date) => {
-            if (studios.length === 0) return
-            openCreate(date)
+          pickingDay={pickingDay}
+          onLessonClick={(lesson) => {
+            setPickingDay(false)
+            openEdit(lesson)
           }}
+          onDayClick={pickingDay ? openCreateOnDate : undefined}
         />
       )}
 

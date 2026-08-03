@@ -69,9 +69,9 @@ export function HomePage() {
                   style={{ background: studioById(lesson.studioId)?.color ?? '#5B7C6A' }}
                 />
                 <div className="list-item__body">
-                  <p className="list-item__title">{lesson.title}</p>
+                  <p className="list-item__title">{studioName(lesson.studioId)}</p>
                   <p className="list-item__meta">
-                    {studioName(lesson.studioId)} · {formatLessonTime(lesson.startAt)}
+                    {lesson.title} · {formatLessonTime(lesson.startAt)}
                   </p>
                 </div>
               </li>

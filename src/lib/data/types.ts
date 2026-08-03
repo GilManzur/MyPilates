@@ -21,18 +21,22 @@ export function createId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().slice(0, 8)}`
 }
 
-/** Warm palette for studio calendar chips. */
+/** Distinct studio colors for calendar visibility. */
 export const STUDIO_COLORS = [
-  '#C4785A', // terracotta
-  '#B56B4A', // clay
-  '#C4A574', // sand
-  '#D4896A', // deep peach
+  '#C45C26', // burnt orange
   '#C49A3C', // mustard
-  '#A67C52', // golden brown
-  '#B87A7A', // warm rose
-  '#A65D3F', // burnt sienna
-  '#C9922A', // amber
-  '#8B7355', // olive brown
-  '#B8734D', // copper
-  '#C97B6B', // soft coral
+  '#6B8F71', // sage
+  '#3D7A6A', // teal
+  '#4A7C9B', // ocean blue
+  '#5B6B9A', // indigo
+  '#8B5A7A', // plum
+  '#C45B6A', // rose
+  '#A65D3F', // terracotta
+  '#7A8B3D', // olive
+  '#B87333', // copper
+  '#6A5ACD', // slate violet
+  '#D4783A', // apricot
+  '#2F6F5E', // deep green
+  '#9B4D4D', // brick
+  '#5C7A9B', // steel blue
 ]

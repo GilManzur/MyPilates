@@ -802,6 +802,23 @@ h2 {
   padding: 12px;
 }
 
+.month-calendar.is-picking-day .month-calendar__cell {
+  cursor: pointer;
+}
+
+.month-calendar.is-picking-day .month-calendar__day-btn {
+  width: 100%;
+}
+
+.month-calendar.is-picking-day .month-calendar__cell:hover {
+  background: rgba(91, 124, 106, 0.12);
+  border-color: rgba(91, 124, 106, 0.35);
+}
+
+.month-calendar:not(.is-picking-day) .month-calendar__day-btn {
+  cursor: default;
+}
+
 .month-calendar__weekdays,
 .month-calendar__grid {
   display: grid;

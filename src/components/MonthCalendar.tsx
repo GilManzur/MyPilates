@@ -16,9 +16,17 @@ type Props = {
   studios: Studio[]
   onLessonClick: (lesson: Lesson) => void
   onDayClick?: (date: string) => void
+  pickingDay?: boolean
 }
 
-export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDayClick }: Props) {
+export function MonthCalendar({
+  yearMonth,
+  lessons,
+  studios,
+  onLessonClick,
+  onDayClick,
+  pickingDay = false,
+}: Props) {
   const studioMap = useMemo(
     () => Object.fromEntries(studios.map((studio) => [studio.id, studio])),
     [studios],
@@ -48,7 +56,7 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
   const today = todayLocalKey()
 
   return (
-    <div className="month-calendar panel">
+    <div className={`month-calendar panel${pickingDay ? ' is-picking-day' : ''}`}>
       <div className="month-calendar__weekdays" aria-hidden="true">
         {WEEKDAY_LABELS_HE.map((label) => (
           <span key={label} className="month-calendar__weekday">
@@ -65,6 +73,7 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
           const isExpandedWeek = expandedWeekDates.has(cell.date)
           const visibleLessons = isExpandedWeek ? dayLessons : dayLessons.slice(0, 3)
           const hiddenCount = isExpandedWeek ? 0 : Math.max(0, dayLessons.length - 3)
+          const studioName = (studioId: string) => studioMap[studioId]?.name ?? 'סטודיו'
 
           return (
             <div
@@ -74,14 +83,18 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
               <button
                 type="button"
                 className="month-calendar__day-btn"
-                onClick={() => onDayClick?.(cell.date)}
-                aria-label={`יום ${dayNum}`}
+                onClick={() => {
+                  if (!pickingDay || !onDayClick) return
+                  onDayClick(cell.date)
+                }}
+                aria-label={pickingDay ? `בחרי יום ${dayNum}` : `יום ${dayNum}`}
               >
                 <span className="month-calendar__day-num">{dayNum}</span>
               </button>
               <div className="month-calendar__events">
                 {visibleLessons.map((lesson) => {
                   const color = studioMap[lesson.studioId]?.color ?? '#5B7C6A'
+                  const name = studioName(lesson.studioId)
                   return (
                     <button
                       key={lesson.id}
@@ -93,10 +106,10 @@ export function MonthCalendar({ yearMonth, lessons, studios, onLessonClick, onDa
                         color,
                       }}
                       onClick={() => onLessonClick(lesson)}
-                      title={`${formatLessonClock(lesson.startAt)} ${lesson.title}`}
+                      title={`${formatLessonClock(lesson.startAt)} ${name}`}
                     >
                       <span className="month-calendar__event-time">{formatLessonClock(lesson.startAt)}</span>
-                      <span className="month-calendar__event-title">{lesson.title}</span>
+                      <span className="month-calendar__event-title">{name}</span>
                     </button>
                   )
                 })}
