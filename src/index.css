@@ -140,6 +140,10 @@ h2 {
 .brand-sub {
   margin: 0;
   font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
 }
 
 .icon-btn {
@@ -172,6 +176,20 @@ h2 {
   align-items: end;
   justify-content: space-between;
   gap: 12px;
+}
+
+.page-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.page-head h1 {
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
+
+.top-bar__brand > div {
+  min-width: 0;
 }
 
 .panel,
@@ -286,6 +304,12 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+}
+
+.list-item > div:not(.list-item__aside) {
+  min-width: 0;
+  flex: 1;
 }
 
 .list-item--column {
@@ -309,25 +333,38 @@ h2 {
   padding: 0;
   color: inherit;
   cursor: pointer;
+  min-width: 0;
 }
 
 .list-item__title {
   margin: 0;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .list-item__meta {
   margin: 2px 0 0;
   font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .list-item__aside {
   text-align: left;
+  flex: 0 0 auto;
+  max-width: 42%;
+  min-width: 0;
+}
+
+.list-item__aside .amount,
+.list-item__aside .badge {
+  max-width: 100%;
 }
 
 .amount {
   margin: 0;
   font-weight: 700;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .color-dot {
@@ -367,6 +404,8 @@ h2 {
   padding: 4px 10px;
   font-size: 0.75rem;
   font-weight: 600;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .badge--pending {
@@ -411,6 +450,8 @@ h2 {
   background: transparent;
   color: var(--ink-soft);
   padding-inline: 10px;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .btn--danger {
@@ -449,9 +490,19 @@ h2 {
 }
 
 .row-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.row-actions > .btn {
+  flex: 1 1 calc(50% - 5px);
+  min-width: 0;
+}
+
+.row-actions > .btn--danger {
+  flex: 1 1 100%;
+  width: auto;
 }
 
 .bottom-nav {
@@ -461,9 +512,9 @@ h2 {
   max-width: 480px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   background: rgba(244, 247, 245, 0.92);
   backdrop-filter: blur(16px);
   border-top: 1px solid var(--line);
@@ -473,10 +524,10 @@ h2 {
   display: grid;
   justify-items: center;
   gap: 2px;
-  padding: 8px 4px;
+  padding: 10px 6px;
   border-radius: 14px;
   color: var(--ink-soft);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
 }
 

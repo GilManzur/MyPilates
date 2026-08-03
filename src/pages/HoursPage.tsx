@@ -72,7 +72,11 @@ export function HoursPage() {
           <ul className="list">
             {unconfirmed.map((lesson) => (
               <li key={lesson.id} className="list-item">
-                <div>
+                <span
+                  className="color-dot"
+                  style={{ background: studioMap[lesson.studioId]?.color ?? '#5B7C6A' }}
+                />
+                <div className="list-item__body">
                   <p className="list-item__title">{lesson.title}</p>
                   <p className="list-item__meta">
                     {studioMap[lesson.studioId]?.name ?? 'סטודיו'} ·{' '}
@@ -136,7 +140,11 @@ export function HoursPage() {
           <ul className="list">
             {entries.map((entry) => (
               <li key={entry.id} className="list-item">
-                <div>
+                <span
+                  className="color-dot"
+                  style={{ background: studioMap[entry.studioId]?.color ?? '#5B7C6A' }}
+                />
+                <div className="list-item__body">
                   <p className="list-item__title">
                     {entry.hours} שע׳ · {studioMap[entry.studioId]?.name ?? 'סטודיו'}
                   </p>

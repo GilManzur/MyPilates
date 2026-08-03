@@ -30,7 +30,8 @@ export function HomePage() {
     .filter((lesson) => lesson.status === 'scheduled' && new Date(lesson.startAt) >= new Date())
     .slice(0, 3)
 
-  const studioName = (id: string) => studios.find((s) => s.id === id)?.name ?? 'סטודיו'
+  const studioById = (id: string) => studios.find((s) => s.id === id)
+  const studioName = (id: string) => studioById(id)?.name ?? 'סטודיו'
 
   return (
     <div className="stack">
@@ -63,7 +64,11 @@ export function HomePage() {
           <ul className="list">
             {upcoming.map((lesson) => (
               <li key={lesson.id} className="list-item">
-                <div>
+                <span
+                  className="color-dot"
+                  style={{ background: studioById(lesson.studioId)?.color ?? '#5B7C6A' }}
+                />
+                <div className="list-item__body">
                   <p className="list-item__title">{lesson.title}</p>
                   <p className="list-item__meta">
                     {studioName(lesson.studioId)} · {formatLessonTime(lesson.startAt)}
@@ -90,7 +95,11 @@ export function HomePage() {
           <ul className="list">
             {summaries.map((summary) => (
               <li key={summary.studioId} className="list-item">
-                <div>
+                <span
+                  className="color-dot"
+                  style={{ background: studioById(summary.studioId)?.color ?? '#5B7C6A' }}
+                />
+                <div className="list-item__body">
                   <p className="list-item__title">{summary.studioName}</p>
                   <p className="list-item__meta">
                     {summary.totalHours} שעות · {formatILS(summary.hourlyRate)}/שעה

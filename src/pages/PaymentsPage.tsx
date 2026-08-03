@@ -23,6 +23,9 @@ export function PaymentsPage() {
     [studios, entries, payments, yearMonth],
   )
 
+  const studioColor = (studioId: string) =>
+    studios.find((studio) => studio.id === studioId)?.color ?? '#5B7C6A'
+
   return (
     <div className="stack">
       <div className="page-head">
@@ -47,7 +50,8 @@ export function PaymentsPage() {
           {summaries.map((summary) => (
             <li key={summary.studioId} className="list-item list-item--column">
               <div className="list-item">
-                <div>
+                <span className="color-dot" style={{ background: studioColor(summary.studioId) }} />
+                <div className="list-item__body">
                   <p className="list-item__title">{summary.studioName}</p>
                   <p className="list-item__meta">
                     {summary.totalHours} שעות × {formatILS(summary.hourlyRate)}
