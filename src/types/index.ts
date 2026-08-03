@@ -28,6 +28,8 @@ export interface Lesson {
   status: LessonStatus
   hoursConfirmed: boolean
   createdAt: string
+  /** Shared id for weekly recurring lessons created together. */
+  seriesId?: string
 }
 
 export interface HourEntry {
