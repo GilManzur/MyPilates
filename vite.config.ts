@@ -15,7 +15,6 @@ export default defineConfig({
         'favicon-48.png',
         'apple-touch-icon.png',
         'icons/*.png',
-        'brand/logo.png',
       ],
       manifest: {
         name: 'MyPilates',
@@ -50,6 +49,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['**/brand/**'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
     }),
   ],
