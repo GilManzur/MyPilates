@@ -651,11 +651,18 @@ h2 {
   flex: 1;
 }
 
-.list-item__title,
-.list-item__meta {
+.list-item__title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.list-item__meta {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .month-calendar {

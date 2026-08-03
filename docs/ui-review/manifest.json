@@ -1,0 +1,37 @@
+[
+  {
+    "file": "screenshots/01-login.png",
+    "title": "מסך התחברות",
+    "route": "/login"
+  },
+  {
+    "file": "screenshots/02-home.png",
+    "title": "בית — סיכום חודשי בלי סטודיו ריק",
+    "route": "/"
+  },
+  {
+    "file": "screenshots/03-calendar.png",
+    "title": "יומן חודשי עם שיעורים צבועים",
+    "route": "/calendar"
+  },
+  {
+    "file": "screenshots/04-hours.png",
+    "title": "שעות — אישור והזנה ידנית",
+    "route": "/hours"
+  },
+  {
+    "file": "screenshots/05-payments.png",
+    "title": "תשלומים — רק סטודיוים עם שעות",
+    "route": "/payments"
+  },
+  {
+    "file": "screenshots/06-settings.png",
+    "title": "הגדרות כולל ניהול סטודיוים",
+    "route": "/settings"
+  },
+  {
+    "file": "screenshots/07-studio-color-sheet.png",
+    "title": "בחירת צבע לסטודיו",
+    "route": "/settings"
+  }
+]

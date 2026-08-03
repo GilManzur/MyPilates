@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyPilates — סקירת UI אחרי שיפורים</title>
+    <style>
+      :root {
+        --bg: #e8eee9;
+        --ink: #1a2420;
+        --ink-soft: #4d5c55;
+        --brand: #3d5a4c;
+        --line: rgba(61, 90, 76, 0.14);
+        --surface: rgba(255, 255, 255, 0.88);
+        --shadow: 0 18px 40px rgba(26, 36, 32, 0.08);
+        --font-display: 'Frank Ruhl Libre', Georgia, serif;
+        --font-body: 'Heebo', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: var(--font-body);
+        background:
+          radial-gradient(circle at 12% -10%, rgba(106, 138, 155, 0.22), transparent 42%),
+          radial-gradient(circle at 90% 8%, rgba(91, 124, 106, 0.18), transparent 36%),
+          linear-gradient(180deg, #eef3ef 0%, var(--bg) 48%, #dde6df 100%);
+      }
+
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 18px 64px;
+      }
+
+      h1,
+      h2 {
+        font-family: var(--font-display);
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 2.8rem);
+      }
+
+      .lede {
+        color: var(--ink-soft);
+        line-height: 1.6;
+        max-width: 46rem;
+        margin: 10px 0 0;
+      }
+
+      .summary {
+        display: grid;
+        gap: 10px;
+        margin: 28px 0 36px;
+        padding: 18px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: var(--shadow);
+      }
+
+      .summary ul {
+        margin: 0;
+        padding-inline-start: 18px;
+        color: var(--ink-soft);
+        line-height: 1.7;
+      }
+
+      .grid {
+        display: grid;
+        gap: 28px;
+      }
+
+      article {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .copy {
+        padding: 18px 18px 8px;
+      }
+
+      .route {
+        margin: 6px 0 0;
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+      }
+
+      figure {
+        margin: 0;
+        padding: 0 18px 18px;
+      }
+
+      img {
+        display: block;
+        width: min(100%, 390px);
+        margin-inline: auto;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        background: #fff;
+      }
+
+      footer {
+        margin-top: 36px;
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700&family=Heebo:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>MyPilates — סקירת מסכים</h1>
+        <p class="lede">
+          צילומי מסך אחרי השיפורים: לוח שנה חודשי, צבעי סטודיו, סטודיוים בהגדרות, סינון תשלומים
+          ריקים, וליטוש UI/UX.
+        </p>
+      </header>
+
+      <section class="summary">
+        <h2>מה תוקן ושופר</h2>
+        <ul>
+          <li>הבר התחתון צומצם ל־4 טאבים; ניהול סטודיוים עבר להגדרות.</li>
+          <li>היומן מציג לוח חודשי עם שיעורים צבועים לפי סטודיו.</li>
+          <li>בטופס סטודיו אפשר לבחור צבע לזיהוי ביומן.</li>
+          <li>סטודיו בלי שעות בחודש לא מופיע במסך התשלומים / סיכום הבית.</li>
+          <li>תיקוני פריסה כדי שטקסט ארוך יישאר בתוך התיבות, ומרווחי ניווט נוחים יותר.</li>
+        </ul>
+      </section>
+
+      <div class="grid" id="gallery"></div>
+
+      <footer>
+        נוצר אוטומטית עם Playwright מתוך
+        <code>scripts/capture-ui-review.mjs</code>. לפתיחה מקומית: פתחי את הקובץ ישירות או דרך
+        שרת סטטי מתיקיית <code>docs/ui-review</code>.
+      </footer>
+    </div>
+
+    <script type="module">
+      const screens = [
+        {
+          file: 'screenshots/01-login.png',
+          title: 'התחברות',
+          route: '/login',
+          note: 'מסך כניסה נקי עם מיתוג MyPilates.',
+        },
+        {
+          file: 'screenshots/02-home.png',
+          title: 'בית',
+          route: '/',
+          note: 'סיכום חודשי ושיעורים קרובים עם נקודות צבע לפי סטודיו; בלי סטודיוים ריקים.',
+        },
+        {
+          file: 'screenshots/03-calendar.png',
+          title: 'יומן חודשי',
+          route: '/calendar',
+          note: 'גריד חודשי עם שיעורים בתוך התאים, מקרא צבעים ורשימת החודש.',
+        },
+        {
+          file: 'screenshots/04-hours.png',
+          title: 'שעות',
+          route: '/hours',
+          note: 'אישור שעות משיעור והזנה ידנית, עם זיהוי צבע לסטודיו.',
+        },
+        {
+          file: 'screenshots/05-payments.png',
+          title: 'תשלומים',
+          route: '/payments',
+          note: 'מוצגים רק סטודיוים עם שעות בחודש (סטודיו ללא שיעורים מוסתר).',
+        },
+        {
+          file: 'screenshots/06-settings.png',
+          title: 'הגדרות + סטודיוים',
+          route: '/settings',
+          note: 'ניהול סטודיוים בתוך ההגדרות — בלי טאב נפרד בבר התחתון.',
+        },
+        {
+          file: 'screenshots/07-studio-color-sheet.png',
+          title: 'בחירת צבע לסטודיו',
+          route: '/settings',
+          note: 'בוחרת צבע מהפלטה כדי שיהיה קל להבחין ביומן החודשי.',
+        },
+      ]
+
+      const gallery = document.getElementById('gallery')
+      for (const screen of screens) {
+        const article = document.createElement('article')
+        article.innerHTML = `
+          <div class="copy">
+            <h2>${screen.title}</h2>
+            <p class="route">${screen.route}</p>
+            <p class="lede">${screen.note}</p>
+          </div>
+          <figure>
+            <img src="${screen.file}" alt="${screen.title}" loading="lazy" />
+          </figure>
+        `
+        gallery.appendChild(article)
+      }
+    </script>
+  </body>
+</html>
