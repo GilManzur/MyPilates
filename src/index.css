@@ -158,7 +158,9 @@ h2 {
 }
 
 .page {
-  animation: rise 480ms ease both;
+  /* Fade only — no transform. A transform here would make it the containing
+     block for position:fixed overlays (sheets, doc-viewer) and misplace them. */
+  animation: fade 320ms ease both;
 }
 
 .stack {
@@ -400,8 +402,8 @@ h2 {
 }
 
 .color-picker__swatch {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -482,8 +484,8 @@ h2 {
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 12px;
@@ -545,14 +547,18 @@ h2 {
 
 .input {
   width: 100%;
+  min-height: 48px;
   border: 1px solid var(--line);
   background: var(--surface-solid);
   border-radius: 14px;
   padding: 12px 14px;
+  /* 16px keeps iOS from zooming the viewport on focus. */
+  font-size: 16px;
   color: var(--ink);
 }
 
 .input--area {
+  min-height: 0;
   resize: vertical;
 }
 
@@ -560,6 +566,14 @@ h2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+/* Two-up field rows collapse to one column on very narrow phones. */
+@media (max-width: 360px) {
+  .grid-2,
+  .time-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .row-actions {
@@ -585,9 +599,9 @@ h2 {
   max-width: 480px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
   background: rgba(244, 247, 245, 0.92);
   backdrop-filter: blur(16px);
   border-top: 1px solid var(--line);
@@ -596,12 +610,15 @@ h2 {
 .bottom-nav__item {
   display: grid;
   justify-items: center;
-  gap: 2px;
-  padding: 10px 6px;
+  align-content: center;
+  gap: 3px;
+  min-height: 52px;
+  padding: 8px 2px;
   border-radius: 14px;
   color: var(--ink-soft);
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .bottom-nav__item.is-active {
@@ -610,7 +627,8 @@ h2 {
 }
 
 .bottom-nav__icon {
-  font-size: 1rem;
+  display: grid;
+  place-items: center;
   line-height: 1;
 }
 
@@ -755,20 +773,38 @@ h2 {
   position: fixed;
   inset: 0;
   background: rgba(26, 36, 32, 0.42);
-  display: grid;
-  align-items: end;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   z-index: 40;
-  padding: 16px;
+  padding: 16px 16px 0;
   animation: fade 180ms ease both;
 }
 
 .sheet {
-  padding: 18px;
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
   display: grid;
   gap: 12px;
   animation: sheet-up 220ms ease both;
-  max-height: 85dvh;
-  overflow: auto;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 24px 24px 0 0;
+}
+
+/* Grab-handle affordance so it's obvious the sheet scrolls. */
+.sheet::before {
+  content: '';
+  display: block;
+  justify-self: center;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  background: var(--line);
 }
 
 .settings-brand {
@@ -1038,7 +1074,9 @@ h2 {
   z-index: 60;
   background: rgba(26, 36, 32, 0.55);
   overflow-y: auto;
-  padding: 16px;
+  overscroll-behavior: contain;
+  padding: calc(12px + env(safe-area-inset-top)) 16px
+    calc(16px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1046,6 +1084,9 @@ h2 {
 }
 
 .doc-viewer__bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   gap: 10px;
   width: 100%;
@@ -1215,6 +1256,35 @@ h2 {
   margin: 0;
   font-size: 11px;
   color: #6a766f;
+}
+
+/* Tighter document layout on small phones. */
+@media (max-width: 480px) {
+  .doc-print {
+    padding: 18px 16px;
+  }
+
+  .doc-print__head,
+  .doc-print__parties {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .doc-print__title {
+    align-items: flex-start;
+    text-align: start;
+  }
+
+  .doc-print__related {
+    align-self: flex-start;
+  }
+
+  /* Let a long invoice table scroll horizontally instead of squashing. */
+  .doc-print__table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }
 
 @media print {

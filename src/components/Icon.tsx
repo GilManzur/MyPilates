@@ -8,6 +8,10 @@ type IconName =
   | 'download'
   | 'cancel'
   | 'refund'
+  | 'home'
+  | 'calendar'
+  | 'clock'
+  | 'shekel'
 
 type Props = {
   name: IconName
@@ -96,6 +100,36 @@ export function Icon({ name, size = 18 }: Props) {
           <path d="M3 7v6h6" />
           <path d="M3 13a9 9 0 1 0 3-7.7L3 7" />
           <path d="M12 8v4l3 2" />
+        </svg>
+      )
+    case 'home':
+      return (
+        <svg {...common}>
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+        </svg>
+      )
+    case 'calendar':
+      return (
+        <svg {...common}>
+          <rect x="3" y="4.5" width="18" height="16" rx="2" />
+          <path d="M3 9h18" />
+          <path d="M8 3v3" />
+          <path d="M16 3v3" />
+        </svg>
+      )
+    case 'clock':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </svg>
+      )
+    case 'shekel':
+      return (
+        <svg {...common}>
+          <path d="M6 6v9a3 3 0 0 0 3 3h4" />
+          <path d="M18 18V9a3 3 0 0 0-3-3h-4" />
         </svg>
       )
   }

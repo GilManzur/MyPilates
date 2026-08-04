@@ -1,13 +1,14 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Logo } from './Logo'
+import { Icon, type IconName } from './Icon'
 
-const links = [
-  { to: '/', label: 'בית', icon: '⌂' },
-  { to: '/calendar', label: 'יומן', icon: '▦' },
-  { to: '/hours', label: 'שעות', icon: '◷' },
-  { to: '/payments', label: 'תשלום', icon: '₪' },
-  { to: '/documents', label: 'מסמכים', icon: '🧾' },
+const links: { to: string; label: string; icon: IconName }[] = [
+  { to: '/', label: 'בית', icon: 'home' },
+  { to: '/calendar', label: 'יומן', icon: 'calendar' },
+  { to: '/hours', label: 'שעות', icon: 'clock' },
+  { to: '/payments', label: 'תשלום', icon: 'shekel' },
+  { to: '/documents', label: 'מסמכים', icon: 'document' },
 ]
 
 export function AppShell() {
@@ -41,7 +42,7 @@ export function AppShell() {
             className={({ isActive }) => `bottom-nav__item${isActive ? ' is-active' : ''}`}
           >
             <span className="bottom-nav__icon" aria-hidden="true">
-              {link.icon}
+              <Icon name={link.icon} size={22} />
             </span>
             <span>{link.label}</span>
           </NavLink>
