@@ -5,18 +5,42 @@ import {
   getDoc,
   getDocs,
   query,
+  runTransaction,
   setDoc,
   where,
   orderBy,
   type Firestore,
 } from 'firebase/firestore'
 import { db as maybeDb } from '../firebase/app'
-import type { HourEntry, Lesson, Payment, Studio, UserProfile } from '../../types'
+import type {
+  FinancialDocument,
+  HourEntry,
+  Lesson,
+  Payment,
+  Studio,
+  UserProfile,
+} from '../../types'
 import type { DataRepository } from './types'
+import { createId } from './types'
 
 function getDb(): Firestore {
   if (!maybeDb) throw new Error('Firestore is not initialized')
   return maybeDb
+}
+
+/** Firestore rejects `undefined` fields; drop them recursively before writing. */
+function pruneUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => pruneUndefined(item)) as unknown as T
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(value)) {
+      if (val !== undefined) out[key] = pruneUndefined(val)
+    }
+    return out as T
+  }
+  return value
 }
 
 function userDoc(uid: string) {
@@ -113,6 +137,56 @@ export function createFirebaseRepository(): DataRepository {
           fcmTokens: [...profile.fcmTokens, token],
         })
       }
+    },
+    async listDocuments(uid) {
+      const snap = await getDocs(col(uid, 'documents'))
+      return snap.docs
+        .map((item) => ({ id: item.id, ...item.data() }) as FinancialDocument)
+        .sort((a, b) => b.number - a.number)
+    },
+    async issueDocument(uid, draft) {
+      const db = getDb()
+      const counterRef = doc(db, 'users', uid, 'counters', 'documentNumber')
+      const id = createId('doc')
+      const docRef = doc(db, 'users', uid, 'documents', id)
+      return runTransaction(db, async (tx) => {
+        const counterSnap = await tx.get(counterRef)
+        const number = (counterSnap.exists() ? (counterSnap.data().value as number) : 0) + 1
+        const full: FinancialDocument = {
+          ...draft,
+          id,
+          number,
+          status: 'issued',
+          createdAt: new Date().toISOString(),
+        }
+        tx.set(counterRef, { value: number }, { merge: true })
+        const { id: _id, ...data } = full
+        tx.set(docRef, pruneUndefined(data))
+        return full
+      })
+    },
+    async cancelDocument(uid, originalId, draft) {
+      const db = getDb()
+      const counterRef = doc(db, 'users', uid, 'counters', 'documentNumber')
+      const originalRef = doc(db, 'users', uid, 'documents', originalId)
+      const id = createId('doc')
+      const docRef = doc(db, 'users', uid, 'documents', id)
+      return runTransaction(db, async (tx) => {
+        const counterSnap = await tx.get(counterRef)
+        const number = (counterSnap.exists() ? (counterSnap.data().value as number) : 0) + 1
+        const full: FinancialDocument = {
+          ...draft,
+          id,
+          number,
+          status: 'issued',
+          createdAt: new Date().toISOString(),
+        }
+        tx.set(counterRef, { value: number }, { merge: true })
+        tx.update(originalRef, { status: 'cancelled' })
+        const { id: _id, ...data } = full
+        tx.set(docRef, pruneUndefined(data))
+        return full
+      })
     },
   }
 }

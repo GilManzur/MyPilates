@@ -7,6 +7,7 @@ const links = [
   { to: '/calendar', label: 'יומן', icon: '▦' },
   { to: '/hours', label: 'שעות', icon: '◷' },
   { to: '/payments', label: 'תשלום', icon: '₪' },
+  { to: '/documents', label: 'מסמכים', icon: '🧾' },
 ]
 
 export function AppShell() {

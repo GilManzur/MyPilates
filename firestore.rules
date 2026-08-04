@@ -2,10 +2,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
 
-      match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Profile document (displayName, email, fcmTokens, business).
+      allow read, write: if isOwner();
+
+      match /studios/{id} {
+        allow read, write: if isOwner();
+      }
+      match /lessons/{id} {
+        allow read, write: if isOwner();
+      }
+      match /hourEntries/{id} {
+        allow read, write: if isOwner();
+      }
+      match /payments/{id} {
+        allow read, write: if isOwner();
+      }
+      match /counters/{id} {
+        allow read, write: if isOwner();
+      }
+
+      // Financial documents are immutable and sequentially numbered:
+      // create + read only; the sole permitted update is issued -> cancelled
+      // (number and type must not change); never deleted.
+      match /documents/{id} {
+        allow read, create: if isOwner();
+        allow update: if isOwner()
+          && resource.data.status == 'issued'
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.number == resource.data.number
+          && request.resource.data.type == resource.data.type;
+        allow delete: if false;
       }
     }
   }

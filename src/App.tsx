@@ -7,6 +7,7 @@ import { CalendarPage } from './pages/CalendarPage'
 import { HoursPage } from './pages/HoursPage'
 import { StudiosPage } from './pages/StudiosPage'
 import { PaymentsPage } from './pages/PaymentsPage'
+import { DocumentsPage } from './pages/DocumentsPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="hours" element={<HoursPage />} />
         <Route path="studios" element={<StudiosPage />} />
         <Route path="payments" element={<PaymentsPage />} />
+        <Route path="documents" element={<DocumentsPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

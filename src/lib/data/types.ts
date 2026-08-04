@@ -1,4 +1,17 @@
-import type { HourEntry, Lesson, Payment, Studio, UserProfile } from '../../types'
+import type {
+  FinancialDocument,
+  HourEntry,
+  Lesson,
+  Payment,
+  Studio,
+  UserProfile,
+} from '../../types'
+
+/**
+ * A document as built by the UI, before the repository assigns the immutable
+ * running `number`, internal `id`, `status`, and `createdAt`.
+ */
+export type DocumentDraft = Omit<FinancialDocument, 'id' | 'number' | 'status' | 'createdAt'>
 
 export interface DataRepository {
   getProfile(uid: string): Promise<UserProfile | null>
@@ -15,6 +28,16 @@ export interface DataRepository {
   listPayments(uid: string, yearMonth: string): Promise<Payment[]>
   upsertPayment(uid: string, payment: Payment): Promise<void>
   addFcmToken(uid: string, token: string): Promise<void>
+  /** Financial documents. Immutable & sequentially numbered — no delete/update. */
+  listDocuments(uid: string): Promise<FinancialDocument[]>
+  /** Assigns the next running number and persists atomically. */
+  issueDocument(uid: string, draft: DocumentDraft): Promise<FinancialDocument>
+  /** Issues a cancellation/refund document and marks the original `cancelled`, atomically. */
+  cancelDocument(
+    uid: string,
+    originalId: string,
+    draft: DocumentDraft,
+  ): Promise<FinancialDocument>
 }
 
 export function createId(prefix: string): string {

@@ -121,3 +121,13 @@ export function formatILS(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount)
 }
+
+/** Exact ILS with agorot — for legal documents where rounding is not allowed. */
+export function formatILSExact(amount: number): string {
+  return new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency: 'ILS',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}

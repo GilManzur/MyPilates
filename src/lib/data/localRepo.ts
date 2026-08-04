@@ -1,5 +1,13 @@
-import type { HourEntry, Lesson, Payment, Studio, UserProfile } from '../../types'
+import type {
+  FinancialDocument,
+  HourEntry,
+  Lesson,
+  Payment,
+  Studio,
+  UserProfile,
+} from '../../types'
 import type { DataRepository } from './types'
+import { createId } from './types'
 
 interface LocalStore {
   profiles: Record<string, UserProfile>
@@ -7,6 +15,8 @@ interface LocalStore {
   lessons: Record<string, Lesson[]>
   hours: Record<string, HourEntry[]>
   payments: Record<string, Payment[]>
+  documents: Record<string, FinancialDocument[]>
+  counters: Record<string, { documentNumber: number }>
   auth: { uid: string; email: string; password: string; displayName: string } | null
 }
 
@@ -21,10 +31,16 @@ function readStore(): LocalStore {
       lessons: {},
       hours: {},
       payments: {},
+      documents: {},
+      counters: {},
       auth: null,
     }
   }
-  return JSON.parse(raw) as LocalStore
+  const parsed = JSON.parse(raw) as LocalStore
+  // Backfill collections added after a store was first created.
+  parsed.documents ??= {}
+  parsed.counters ??= {}
+  return parsed
 }
 
 function writeStore(store: LocalStore) {
@@ -131,6 +147,42 @@ export function createLocalRepository(): DataRepository {
         store.profiles[uid] = profile
         writeStore(store)
       }
+    },
+    async listDocuments(uid) {
+      return [...(readStore().documents[uid] ?? [])].sort((a, b) => b.number - a.number)
+    },
+    async issueDocument(uid, draft) {
+      const store = readStore()
+      const number = (store.counters[uid]?.documentNumber ?? 0) + 1
+      const full: FinancialDocument = {
+        ...draft,
+        id: createId('doc'),
+        number,
+        status: 'issued',
+        createdAt: new Date().toISOString(),
+      }
+      store.counters[uid] = { documentNumber: number }
+      store.documents[uid] = [...(store.documents[uid] ?? []), full]
+      writeStore(store)
+      return full
+    },
+    async cancelDocument(uid, originalId, draft) {
+      const store = readStore()
+      const number = (store.counters[uid]?.documentNumber ?? 0) + 1
+      const full: FinancialDocument = {
+        ...draft,
+        id: createId('doc'),
+        number,
+        status: 'issued',
+        createdAt: new Date().toISOString(),
+      }
+      store.counters[uid] = { documentNumber: number }
+      const existing = (store.documents[uid] ?? []).map((item) =>
+        item.id === originalId ? { ...item, status: 'cancelled' as const } : item,
+      )
+      store.documents[uid] = [...existing, full]
+      writeStore(store)
+      return full
     },
   }
 }

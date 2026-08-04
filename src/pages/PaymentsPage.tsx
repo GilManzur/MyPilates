@@ -1,9 +1,16 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { IconButton } from '../components/IconButton'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
 import { useHourEntries } from '../hooks/useHourEntries'
 import { usePayments } from '../hooks/usePayments'
+import { useDocuments } from '../hooks/useDocuments'
+import { useProfile } from '../hooks/useProfile'
+import type { DocumentDraft } from '../lib/data/types'
+import { buildMonthlyLineItems, documentTypeLabel } from '../lib/documents'
+import { formatMonthTitle } from '../lib/dates'
+import type { DocumentType, StudioMonthSummary } from '../types'
 import {
   buildMonthSummaries,
   currentYearMonth,
@@ -17,6 +24,9 @@ export function PaymentsPage() {
   const { studios } = useStudios()
   const { entries } = useHourEntries(yearMonth)
   const { payments, confirmPayment, unconfirmPayment } = usePayments(yearMonth)
+  const { issue } = useDocuments()
+  const { business } = useProfile()
+  const [message, setMessage] = useState('')
 
   const summaries = useMemo(
     () => buildMonthSummaries(studios, entries, payments, yearMonth),
@@ -25,6 +35,32 @@ export function PaymentsPage() {
 
   const studioColor = (studioId: string) =>
     studios.find((studio) => studio.id === studioId)?.color ?? '#5B7C6A'
+
+  const issueForSummary = async (summary: StudioMonthSummary, type: DocumentType) => {
+    if (!business) return
+    const monthLabel = formatMonthTitle(yearMonth)
+    const draft: DocumentDraft = {
+      type,
+      issuedAt: new Date().toISOString(),
+      recipient: { name: summary.studioName, studioId: summary.studioId },
+      lineItems: buildMonthlyLineItems(summary, monthLabel),
+      total: summary.amount,
+      currency: 'ILS',
+      business,
+      sourceRef: {
+        studioId: summary.studioId,
+        yearMonth,
+        ...(summary.paymentId ? { paymentId: summary.paymentId } : {}),
+      },
+      ...(type === 'receipt'
+        ? { payments: [{ method: 'transfer' as const, amount: summary.amount }] }
+        : {}),
+    }
+    const created = await issue(draft)
+    if (created) {
+      setMessage(`${documentTypeLabel(type)} מס׳ ${created.number} הופק/ה עבור ${summary.studioName}`)
+    }
+  }
 
   return (
     <div className="stack">
@@ -36,6 +72,11 @@ export function PaymentsPage() {
       </div>
 
       <MonthSwitcher yearMonth={yearMonth} onChange={setYearMonth} />
+      {message && (
+        <p className="toast">
+          {message} · <Link to="/documents">למסמכים</Link>
+        </p>
+      )}
 
       <section className="hero-panel hero-panel--compact">
         <p className="stat-label">ממתין לתשלום</p>
@@ -78,9 +119,32 @@ export function PaymentsPage() {
                   />
                 )}
               </div>
+              <div className="doc-actions">
+                <IconButton
+                  label="הפק דרישת תשלום"
+                  icon="document"
+                  disabled={!business || summary.amount <= 0}
+                  onClick={() => void issueForSummary(summary, 'demand')}
+                />
+                <IconButton
+                  label="הפק קבלה"
+                  icon="print"
+                  variant="primary"
+                  disabled={
+                    !business || summary.amount <= 0 || summary.paymentStatus !== 'confirmed'
+                  }
+                  onClick={() => void issueForSummary(summary, 'receipt')}
+                />
+              </div>
             </li>
           ))}
         </ul>
+      )}
+      {!business && summaries.length > 0 && (
+        <p className="hint">
+          כדי להפיק קבלות ודרישות תשלום, מלאי את <Link to="/settings#business">פרטי העסק</Link>{' '}
+          בהגדרות.
+        </p>
       )}
     </div>
   )

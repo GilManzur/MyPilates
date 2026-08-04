@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { Logo } from '../components/Logo'
+import { BusinessDetails } from '../components/BusinessDetails'
 import { StudiosManager } from '../components/StudiosManager'
 import { useAuth } from '../contexts/AuthContext'
 import { useLessons } from '../hooks/useLessons'
@@ -21,8 +22,9 @@ export function SettingsPage() {
   }, [])
 
   useEffect(() => {
-    if (window.location.hash !== '#studios') return
-    document.getElementById('studios')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const id = window.location.hash.replace('#', '')
+    if (!id) return
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   const onEnableNotifications = async () => {
@@ -65,6 +67,8 @@ export function SettingsPage() {
           {isLocalMode() && <span className="badge badge--pending">מצב מקומי</span>}
         </div>
       </section>
+
+      <BusinessDetails />
 
       <StudiosManager />
 

@@ -1,4 +1,13 @@
-type IconName = 'edit' | 'trash' | 'check' | 'undo'
+type IconName =
+  | 'edit'
+  | 'trash'
+  | 'check'
+  | 'undo'
+  | 'document'
+  | 'print'
+  | 'download'
+  | 'cancel'
+  | 'refund'
 
 type Props = {
   name: IconName
@@ -47,6 +56,46 @@ export function Icon({ name, size = 18 }: Props) {
         <svg {...common}>
           <path d="M3 7v6h6" />
           <path d="M3 13a9 9 0 1 0 3-7.7L3 7" />
+        </svg>
+      )
+    case 'document':
+      return (
+        <svg {...common}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 2v6h6" />
+          <path d="M8 13h8" />
+          <path d="M8 17h8" />
+        </svg>
+      )
+    case 'print':
+      return (
+        <svg {...common}>
+          <path d="M6 9V2h12v7" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <path d="M6 14h12v8H6Z" />
+        </svg>
+      )
+    case 'download':
+      return (
+        <svg {...common}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M7 10l5 5 5-5" />
+          <path d="M12 15V3" />
+        </svg>
+      )
+    case 'cancel':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M8 8l8 8" />
+        </svg>
+      )
+    case 'refund':
+      return (
+        <svg {...common}>
+          <path d="M3 7v6h6" />
+          <path d="M3 13a9 9 0 1 0 3-7.7L3 7" />
+          <path d="M12 8v4l3 2" />
         </svg>
       )
   }

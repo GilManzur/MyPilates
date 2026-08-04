@@ -2,10 +2,22 @@ export type LessonStatus = 'scheduled' | 'completed' | 'cancelled'
 export type HourSource = 'lesson' | 'manual'
 export type PaymentStatus = 'pending' | 'confirmed'
 
+/** עוסק פטור business identity, printed on every issued document. */
+export interface BusinessProfile {
+  /** שם העסק / השם המלא */
+  legalName: string
+  /** מספר עוסק פטור / ת״ז */
+  taxId: string
+  address?: string
+  phone?: string
+  email?: string
+}
+
 export interface UserProfile {
   displayName: string
   email: string
   fcmTokens: string[]
+  business?: BusinessProfile
 }
 
 export interface Studio {
@@ -52,6 +64,61 @@ export interface Payment {
   expectedAmount: number
   status: PaymentStatus
   confirmedAt?: string
+}
+
+/**
+ * Financial documents an עוסק פטור may issue.
+ * - receipt (קבלה): issued on receipt of payment; carries payment-method breakdown.
+ * - invoice (חשבונית עסקה) / demand (דרישת תשלום): documentation / request, pre-payment.
+ * - cancellation (ביטול קבלה) / refund (החזר כספי): reference an original document.
+ * עוסק פטור may NOT issue a tax invoice (חשבונית מס).
+ */
+export type DocumentType = 'receipt' | 'invoice' | 'demand' | 'cancellation' | 'refund'
+export type DocumentStatus = 'issued' | 'cancelled'
+export type PaymentMethod = 'cash' | 'check' | 'credit' | 'transfer' | 'bit' | 'paypal'
+
+export interface DocumentLineItem {
+  description: string
+  quantity: number
+  unitPrice: number
+  amount: number
+}
+
+export interface DocumentPayment {
+  method: PaymentMethod
+  amount: number
+  /** המחאה: bank, branch, check number, due date */
+  bank?: string
+  branch?: string
+  checkNumber?: string
+  dueDate?: string
+  /** אשראי: card type; העברה/Bit/PayPal: free reference */
+  cardType?: string
+  reference?: string
+}
+
+export interface FinancialDocument {
+  /** Internal id (createId). */
+  id: string
+  /** Global sequential running number — the legal identifier. Assigned atomically. */
+  number: number
+  type: DocumentType
+  status: DocumentStatus
+  issuedAt: string
+  recipient: { name: string; taxId?: string; address?: string; studioId?: string }
+  lineItems: DocumentLineItem[]
+  total: number
+  currency: 'ILS'
+  /** Payment-method breakdown, required on receipts. */
+  payments?: DocumentPayment[]
+  /** For cancellation/refund — the original document's running number. */
+  relatedNumber?: number
+  /** For monthly auto-generated receipts tied to a studio's month. */
+  sourceRef?: { studioId: string; yearMonth: string; paymentId?: string }
+  note?: string
+  /** Immutable snapshot of the business identity at issue time. */
+  business: BusinessProfile
+  createdAt: string
 }
 
 export interface StudioMonthSummary {
