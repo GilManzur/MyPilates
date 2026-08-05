@@ -626,6 +626,12 @@ h2 {
   background: rgba(61, 90, 76, 0.1);
 }
 
+/* Settings lives in the top-bar gear on mobile; this extra nav entry only
+   surfaces in the desktop sidebar (see the desktop breakpoint at the bottom). */
+.bottom-nav__item--desktop {
+  display: none;
+}
+
 .bottom-nav__icon {
   display: grid;
   place-items: center;
@@ -1040,11 +1046,12 @@ h2 {
   }
 }
 
-@media (min-width: 720px) {
-  .app-shell,
-  .auth-screen,
-  .bottom-nav {
-    max-width: 430px;
+/* Between the phone column and the desktop breakpoint (720–1023px, e.g.
+   tablets), keep the app as a comfortable centered 480px column. The real
+   widening happens at the desktop breakpoint below. */
+@media (min-width: 720px) and (max-width: 1023px) {
+  .auth-screen {
+    max-width: 460px;
   }
 }
 
@@ -1312,5 +1319,155 @@ h2 {
 
   @page {
     margin: 14mm;
+  }
+}
+
+/* ============================================================
+   Desktop layout (≥1024px).
+   Everything above (the mobile experience) is left untouched;
+   every rule here is additive and scoped to wide viewports.
+   Hard constraint: never add transform/filter/perspective/
+   will-change to .app-shell or .page — the fixed overlays
+   (.sheet, .doc-viewer) would anchor to them and mis-position.
+   ============================================================ */
+@media (min-width: 1024px) {
+  /* ---- Shell becomes a sidebar grid. In RTL the first column is the
+     inline-start (right) edge, so the nav sits on the right. ---- */
+  .app-shell {
+    max-width: 1180px;
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+    grid-template-areas:
+      'nav header'
+      'nav page';
+    column-gap: 28px;
+    align-items: start;
+    padding: 24px 28px 36px;
+  }
+
+  .top-bar {
+    grid-area: header;
+    margin-bottom: 6px;
+  }
+
+  /* The gear is redundant once Settings is a first-class sidebar item. */
+  .top-bar > .icon-btn {
+    display: none;
+  }
+
+  .page {
+    grid-area: page;
+    min-width: 0;
+  }
+
+  /* ---- Bottom tab bar → vertical sidebar ---- */
+  .bottom-nav {
+    grid-area: nav;
+    position: sticky;
+    top: 24px;
+    inset-inline: auto;
+    bottom: auto;
+    max-width: none;
+    height: fit-content;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .bottom-nav__item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 46px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .bottom-nav__item:hover {
+    background: rgba(61, 90, 76, 0.08);
+    color: var(--ink);
+  }
+
+  .bottom-nav__item.is-active:hover {
+    color: var(--brand);
+  }
+
+  /* ---- Dashboards flow into two masonry columns. Full-width elements
+     (headers, hero, month switcher, toast) break out and span both. ---- */
+  .app-desk-dash {
+    display: block;
+    column-count: 2;
+    column-gap: 18px;
+  }
+
+  .app-desk-dash > * {
+    break-inside: avoid;
+  }
+
+  .app-desk-dash > .panel {
+    margin-bottom: 18px;
+  }
+
+  .app-desk-dash > .page-head,
+  .app-desk-dash > .hero-panel,
+  .app-desk-dash > .month-switcher,
+  .app-desk-dash > .toast {
+    column-span: all;
+    margin-bottom: 16px;
+  }
+
+  /* ---- Dense record lists (Payments, Documents) into two columns ---- */
+  .app-desk-pay .list,
+  .app-desk-docs .list {
+    display: block;
+    column-count: 2;
+    column-gap: 12px;
+  }
+
+  .app-desk-pay .list > .list-item,
+  .app-desk-docs .list > .list-item {
+    break-inside: avoid;
+    margin-bottom: 10px;
+  }
+
+  /* ---- Bottom sheets → centered modal dialogs ---- */
+  .sheet-backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .sheet {
+    max-width: 520px;
+    border-radius: var(--radius);
+    /* Gentle fade instead of the mobile bottom-slide, for a modal feel. */
+    animation: fade 180ms ease both;
+  }
+
+  .sheet::before {
+    display: none;
+  }
+
+  /* ---- Calendar uses the extra width (titles already show above 380px) ---- */
+  .month-calendar__cell {
+    min-height: 118px;
+    padding: 6px;
+  }
+
+  .month-calendar__event {
+    font-size: 0.72rem;
+  }
+
+  /* ---- Document viewer overlay: a little more breathing room ---- */
+  .doc-viewer {
+    padding: 28px 24px 40px;
   }
 }

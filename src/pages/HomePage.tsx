@@ -34,7 +34,7 @@ export function HomePage() {
   const studioName = (id: string) => studioById(id)?.name ?? 'סטודיו'
 
   return (
-    <div className="stack">
+    <div className="stack app-desk-dash">
       <section className="hero-panel reveal">
         <p className="eyebrow">החודש שלך</p>
         <h1 className="hero-title">MyPilates</h1>

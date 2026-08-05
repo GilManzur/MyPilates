@@ -4,6 +4,7 @@ import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { Field, TextArea, TextInput, TextSelect } from '../components/Field'
 import { DocumentPrint } from '../components/DocumentPrint'
+import { Overlay } from '../components/Overlay'
 import { useDocuments } from '../hooks/useDocuments'
 import { useProfile } from '../hooks/useProfile'
 import { useStudios } from '../hooks/useStudios'
@@ -187,7 +188,7 @@ export function DocumentsPage() {
   }
 
   return (
-    <div className="stack">
+    <div className="stack app-desk-docs">
       <div className="page-head">
         <div>
           <p className="eyebrow">מסמכים</p>
@@ -260,6 +261,7 @@ export function DocumentsPage() {
       </section>
 
       {open && (
+        <Overlay>
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
             className="sheet"
@@ -446,9 +448,11 @@ export function DocumentsPage() {
             </div>
           </form>
         </div>
+        </Overlay>
       )}
 
       {viewed && (
+        <Overlay>
         <div className="doc-viewer" onClick={() => setViewerId(null)}>
           <div className="doc-viewer__bar" onClick={(e) => e.stopPropagation()}>
             <Button variant="secondary" onClick={() => setViewerId(null)}>
@@ -460,6 +464,7 @@ export function DocumentsPage() {
             <DocumentPrint document={viewed} />
           </div>
         </div>
+        </Overlay>
       )}
     </div>
   )

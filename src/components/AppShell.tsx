@@ -47,6 +47,19 @@ export function AppShell() {
             <span>{link.label}</span>
           </NavLink>
         ))}
+        {/* Settings is reached via the top-bar gear on mobile; on desktop it
+            becomes a first-class sidebar item (hidden below the desktop breakpoint). */}
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `bottom-nav__item bottom-nav__item--desktop${isActive ? ' is-active' : ''}`
+          }
+        >
+          <span className="bottom-nav__icon" aria-hidden="true">
+            <Icon name="settings" size={22} />
+          </span>
+          <span>הגדרות</span>
+        </NavLink>
       </nav>
     </div>
   )

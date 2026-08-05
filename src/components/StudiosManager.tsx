@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from './Button'
 import { IconButton } from './IconButton'
 import { Field, TextInput } from './Field'
+import { Overlay } from './Overlay'
 import { useStudios } from '../hooks/useStudios'
 import { STUDIO_COLORS } from '../lib/data/types'
 import { formatILS } from '../lib/money/calculations'
@@ -97,6 +98,7 @@ export function StudiosManager() {
       )}
 
       {open && (
+        <Overlay>
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
             className="sheet"
@@ -169,6 +171,7 @@ export function StudiosManager() {
             </div>
           </form>
         </div>
+        </Overlay>
       )}
     </section>
   )

@@ -63,7 +63,7 @@ export function PaymentsPage() {
   }
 
   return (
-    <div className="stack">
+    <div className="stack app-desk-pay">
       <div className="page-head">
         <div>
           <p className="eyebrow">תשלומים</p>

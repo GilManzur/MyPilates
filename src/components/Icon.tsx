@@ -12,6 +12,7 @@ type IconName =
   | 'calendar'
   | 'clock'
   | 'shekel'
+  | 'settings'
 
 type Props = {
   name: IconName
@@ -130,6 +131,13 @@ export function Icon({ name, size = 18 }: Props) {
         <svg {...common}>
           <path d="M6 6v9a3 3 0 0 0 3 3h4" />
           <path d="M18 18V9a3 3 0 0 0-3-3h-4" />
+        </svg>
+      )
+    case 'settings':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8 6 18M18 6l1.8-1.8" />
         </svg>
       )
   }

@@ -4,6 +4,7 @@ import { IconButton } from '../components/IconButton'
 import { Field, TextInput, TextSelect } from '../components/Field'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthSwitcher } from '../components/MonthSwitcher'
+import { Overlay } from '../components/Overlay'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { currentYearMonth } from '../lib/money/calculations'
@@ -179,6 +180,7 @@ export function CalendarPage() {
       )}
 
       {open && (
+        <Overlay>
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
             className="sheet"
@@ -322,6 +324,7 @@ export function CalendarPage() {
             </div>
           </form>
         </div>
+        </Overlay>
       )}
     </div>
   )

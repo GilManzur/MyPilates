@@ -54,7 +54,7 @@ export function HoursPage() {
   }
 
   return (
-    <div className="stack">
+    <div className="stack app-desk-dash">
       <div className="page-head">
         <div>
           <p className="eyebrow">דיווח שעות</p>
