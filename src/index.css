@@ -1332,13 +1332,14 @@ h2 {
    ============================================================ */
 @media (min-width: 1024px) {
   /* ---- Shell becomes a sidebar grid. In RTL the first column is the
-     inline-start (right) edge, so the nav sits on the right. ---- */
+     inline-start (right) edge, so brand + nav sit on the right with
+     MyPilates above the menu. ---- */
   .app-shell {
     max-width: 1180px;
     display: grid;
     grid-template-columns: 244px minmax(0, 1fr);
     grid-template-areas:
-      'nav header'
+      'header page'
       'nav page';
     column-gap: 28px;
     align-items: start;
@@ -1347,7 +1348,11 @@ h2 {
 
   .top-bar {
     grid-area: header;
-    margin-bottom: 6px;
+    position: sticky;
+    top: 24px;
+    z-index: 1;
+    margin-bottom: 12px;
+    background: var(--bg);
   }
 
   /* The gear is redundant once Settings is a first-class sidebar item. */
@@ -1364,7 +1369,8 @@ h2 {
   .bottom-nav {
     grid-area: nav;
     position: sticky;
-    top: 24px;
+    /* Sit just below the sticky brand bar (~logo 40px + padding). */
+    top: 88px;
     inset-inline: auto;
     bottom: auto;
     max-width: none;
