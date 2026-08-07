@@ -17,6 +17,8 @@ export function StudiosManager() {
   const [color, setColor] = useState(STUDIO_COLORS[0])
   const [travelEnabled, setTravelEnabled] = useState(false)
   const [travelPay, setTravelPay] = useState('')
+  const [swapEnabled, setSwapEnabled] = useState(false)
+  const [swapPay, setSwapPay] = useState('')
 
   const openCreate = () => {
     setEditing(null)
@@ -25,6 +27,8 @@ export function StudiosManager() {
     setColor(STUDIO_COLORS[studios.length % STUDIO_COLORS.length])
     setTravelEnabled(false)
     setTravelPay('')
+    setSwapEnabled(false)
+    setSwapPay('')
     setOpen(true)
   }
 
@@ -36,6 +40,9 @@ export function StudiosManager() {
     const hasTravel = (studio.travelPay ?? 0) > 0
     setTravelEnabled(hasTravel)
     setTravelPay(hasTravel ? String(studio.travelPay) : '')
+    const hasSwap = (studio.swapPay ?? 0) > 0
+    setSwapEnabled(hasSwap)
+    setSwapPay(hasSwap ? String(studio.swapPay) : '')
     setOpen(true)
   }
 
@@ -45,12 +52,15 @@ export function StudiosManager() {
     if (!name.trim() || !rate || rate <= 0) return
     const travelValue = travelEnabled ? Number(travelPay) : 0
     if (travelEnabled && (!travelValue || travelValue <= 0)) return
+    const swapValue = swapEnabled ? Number(swapPay) : 0
+    if (swapEnabled && (!swapValue || swapValue <= 0)) return
     await saveStudio({
       id: editing?.id,
       name,
       hourlyRate: rate,
       color,
       travelPay: travelEnabled ? travelValue : 0,
+      swapPay: swapEnabled ? swapValue : 0,
     })
     setOpen(false)
   }
@@ -79,6 +89,9 @@ export function StudiosManager() {
                     {formatILS(studio.hourlyRate)} לשעה
                     {(studio.travelPay ?? 0) > 0
                       ? ` · נסיעה ${formatILS(studio.travelPay)} ליום`
+                      : ''}
+                    {(studio.swapPay ?? 0) > 0
+                      ? ` · החלפה ${formatILS(studio.swapPay)} לשעה`
                       : ''}
                   </p>
                 </span>
@@ -161,6 +174,34 @@ export function StudiosManager() {
             ) : (
               <Button type="button" variant="secondary" onClick={() => setTravelEnabled(true)}>
                 הוסף נסיעות
+              </Button>
+            )}
+            {swapEnabled ? (
+              <div className="stack-sm">
+                <Field label="תשלום החלפה לשעה (₪)">
+                  <TextInput
+                    type="number"
+                    min="1"
+                    step="1"
+                    required
+                    value={swapPay}
+                    onChange={(e) => setSwapPay(e.target.value)}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setSwapEnabled(false)
+                    setSwapPay('')
+                  }}
+                >
+                  ללא תשלום החלפה
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" variant="secondary" onClick={() => setSwapEnabled(true)}>
+                הוסף תשלום החלפה
               </Button>
             )}
             <div className="row-actions">

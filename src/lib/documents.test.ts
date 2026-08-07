@@ -11,9 +11,12 @@ import { formatILSExact } from './money/calculations'
 
 describe('buildMonthlyLineItems', () => {
   const base = {
-    totalHours: 8,
+    regularHours: 8,
     hourlyRate: 150,
     hoursAmount: 1200,
+    swapHours: 0,
+    swapPay: 0,
+    swapAmount: 0,
     travelDays: 0,
     travelPay: 0,
     travelAmount: 0,
@@ -34,6 +37,29 @@ describe('buildMonthlyLineItems', () => {
     expect(items).toHaveLength(2)
     expect(items[1]).toMatchObject({ quantity: 4, unitPrice: 30, amount: 120 })
     expect(lineItemsTotal(items)).toBe(1320)
+  })
+
+  it('adds a swap line when swap pay applies', () => {
+    const items = buildMonthlyLineItems(
+      {
+        ...base,
+        regularHours: 2,
+        hoursAmount: 300,
+        swapHours: 1.5,
+        swapPay: 200,
+        swapAmount: 300,
+      },
+      'אוגוסט 2026',
+    )
+    expect(items).toHaveLength(2)
+    expect(items[0]).toMatchObject({ quantity: 2, unitPrice: 150, amount: 300 })
+    expect(items[1]).toMatchObject({
+      description: expect.stringContaining('החלפות'),
+      quantity: 1.5,
+      unitPrice: 200,
+      amount: 300,
+    })
+    expect(lineItemsTotal(items)).toBe(600)
   })
 })
 

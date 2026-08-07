@@ -63,23 +63,40 @@ export function paymentsTotal(payments: DocumentPayment[]): number {
 
 /**
  * Builds the line items for a monthly per-studio document from its summary:
- * one line for lesson hours, and one for travel pay when applicable.
+ * regular hours, optional swap hours, and optional travel pay.
  */
 export function buildMonthlyLineItems(
   summary: Pick<
     StudioMonthSummary,
-    'totalHours' | 'hourlyRate' | 'hoursAmount' | 'travelDays' | 'travelPay' | 'travelAmount'
+    | 'regularHours'
+    | 'hourlyRate'
+    | 'hoursAmount'
+    | 'swapHours'
+    | 'swapPay'
+    | 'swapAmount'
+    | 'travelDays'
+    | 'travelPay'
+    | 'travelAmount'
   >,
   monthLabel: string,
 ): DocumentLineItem[] {
-  const items: DocumentLineItem[] = [
-    {
+  const items: DocumentLineItem[] = []
+  if (summary.hoursAmount > 0 || summary.regularHours > 0) {
+    items.push({
       description: `שיעורי פילאטיס — ${monthLabel}`,
-      quantity: roundHours(summary.totalHours),
+      quantity: roundHours(summary.regularHours),
       unitPrice: summary.hourlyRate,
       amount: summary.hoursAmount,
-    },
-  ]
+    })
+  }
+  if (summary.swapAmount > 0) {
+    items.push({
+      description: `החלפות — ${monthLabel}`,
+      quantity: roundHours(summary.swapHours),
+      unitPrice: summary.swapPay,
+      amount: summary.swapAmount,
+    })
+  }
   if (summary.travelAmount > 0) {
     items.push({
       description: `החזר נסיעות — ${monthLabel}`,

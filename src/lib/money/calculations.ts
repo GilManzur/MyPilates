@@ -39,6 +39,45 @@ export function studioTravelPay(studio: Pick<Studio, 'travelPay'>): number {
   return value > 0 ? value : 0
 }
 
+export function studioSwapPay(studio: Pick<Studio, 'swapPay'>): number {
+  const value = studio.swapPay ?? 0
+  return value > 0 ? value : 0
+}
+
+function studioEntriesForMonth(
+  entries: HourEntry[],
+  studioId: string,
+  yearMonth: string,
+): HourEntry[] {
+  return filterHoursForMonth(entries, yearMonth).filter((entry) => entry.studioId === studioId)
+}
+
+/** Hours billed at the regular hourly rate (non-swap entries). */
+export function regularHoursForStudio(
+  entries: HourEntry[],
+  studioId: string,
+  yearMonth: string,
+): number {
+  return roundHours(
+    studioEntriesForMonth(entries, studioId, yearMonth)
+      .filter((entry) => !entry.isSwap)
+      .reduce((sum, entry) => sum + entry.hours, 0),
+  )
+}
+
+/** Hours billed at the studio swap rate. */
+export function swapHoursForStudio(
+  entries: HourEntry[],
+  studioId: string,
+  yearMonth: string,
+): number {
+  return roundHours(
+    studioEntriesForMonth(entries, studioId, yearMonth)
+      .filter((entry) => entry.isSwap === true)
+      .reduce((sum, entry) => sum + entry.hours, 0),
+  )
+}
+
 /** Unique work days with at least one hour entry for the studio in the month. */
 export function workDaysForStudio(
   entries: HourEntry[],
@@ -46,9 +85,7 @@ export function workDaysForStudio(
   yearMonth: string,
 ): number {
   const days = new Set(
-    filterHoursForMonth(entries, yearMonth)
-      .filter((entry) => entry.studioId === studioId)
-      .map((entry) => entry.date.slice(0, 10)),
+    studioEntriesForMonth(entries, studioId, yearMonth).map((entry) => entry.date.slice(0, 10)),
   )
   return days.size
 }
@@ -72,9 +109,16 @@ export function buildMonthSummaries(
   return activeStudios
     .map((studio) => {
       const totalHours = totalHoursForStudio(entries, studio.id, yearMonth)
+      const swapPay = studioSwapPay(studio)
+      const swapHours = swapPay > 0 ? swapHoursForStudio(entries, studio.id, yearMonth) : 0
+      const regularHours =
+        swapPay > 0
+          ? regularHoursForStudio(entries, studio.id, yearMonth)
+          : totalHours
       const travelPay = studioTravelPay(studio)
       const travelDays = travelPay > 0 ? workDaysForStudio(entries, studio.id, yearMonth) : 0
-      const hoursAmount = amountForHours(totalHours, studio.hourlyRate)
+      const hoursAmount = amountForHours(regularHours, studio.hourlyRate)
+      const swapAmount = amountForHours(swapHours, swapPay)
       const travelAmount = amountForTravel(travelDays, travelPay)
       const payment = payments.find(
         (item) => item.studioId === studio.id && item.yearMonth === yearMonth,
@@ -84,11 +128,15 @@ export function buildMonthSummaries(
         studioName: studio.name,
         hourlyRate: studio.hourlyRate,
         totalHours,
+        regularHours,
         travelPay,
         travelDays,
         travelAmount,
         hoursAmount,
-        amount: Math.round((hoursAmount + travelAmount) * 100) / 100,
+        swapPay,
+        swapHours,
+        swapAmount,
+        amount: Math.round((hoursAmount + swapAmount + travelAmount) * 100) / 100,
         paymentStatus: payment?.status ?? 'pending',
         paymentId: payment?.id,
       }

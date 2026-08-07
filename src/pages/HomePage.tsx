@@ -102,7 +102,12 @@ export function HomePage() {
                 <div className="list-item__body">
                   <p className="list-item__title">{summary.studioName}</p>
                   <p className="list-item__meta">
-                    {summary.totalHours} שעות · {formatILS(summary.hourlyRate)}/שעה
+                    {summary.regularHours > 0
+                      ? `${summary.regularHours} שעות · ${formatILS(summary.hourlyRate)}/שעה`
+                      : ''}
+                    {summary.swapAmount > 0
+                      ? `${summary.regularHours > 0 ? ' · ' : ''}${summary.swapHours} החלפות · ${formatILS(summary.swapPay)}/שעה`
+                      : ''}
                   </p>
                 </div>
                 <div className="list-item__aside">

@@ -101,7 +101,12 @@ export function PaymentsPage() {
                 <div className="list-item__body">
                   <p className="list-item__title">{summary.studioName}</p>
                   <p className="list-item__meta">
-                    {summary.totalHours} שעות × {formatILS(summary.hourlyRate)}
+                    {summary.regularHours > 0
+                      ? `${summary.regularHours} שעות × ${formatILS(summary.hourlyRate)}`
+                      : ''}
+                    {summary.swapAmount > 0
+                      ? `${summary.regularHours > 0 ? ' · ' : ''}${summary.swapHours} החלפות × ${formatILS(summary.swapPay)}`
+                      : ''}
                     {summary.travelAmount > 0
                       ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
                       : ''}

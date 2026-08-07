@@ -28,6 +28,8 @@ export interface Studio {
   color: string
   /** Fixed pay per work day at this studio. 0 = no travel pay. */
   travelPay: number
+  /** Hourly rate for swap/replacement lessons. 0 = swap pay disabled. */
+  swapPay: number
   active: boolean
   createdAt: string
 }
@@ -44,6 +46,8 @@ export interface Lesson {
   createdAt: string
   /** Shared id for weekly recurring lessons created together. */
   seriesId?: string
+  /** When true, hours are billed at the studio's swapPay rate. */
+  isSwap?: boolean
 }
 
 export interface HourEntry {
@@ -55,6 +59,8 @@ export interface HourEntry {
   lessonId?: string
   note?: string
   createdAt: string
+  /** Copied from Lesson.isSwap when confirming lesson hours. */
+  isSwap?: boolean
 }
 
 export interface Payment {
@@ -131,10 +137,16 @@ export interface StudioMonthSummary {
   studioName: string
   hourlyRate: number
   totalHours: number
+  /** Regular (non-swap) hours billed at hourlyRate. */
+  regularHours: number
   travelPay: number
   travelDays: number
   travelAmount: number
+  /** Amount for regular hours only. */
   hoursAmount: number
+  swapPay: number
+  swapHours: number
+  swapAmount: number
   amount: number
   paymentStatus: PaymentStatus
   paymentId?: string

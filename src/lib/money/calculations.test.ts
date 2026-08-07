@@ -20,6 +20,7 @@ const studios: Studio[] = [
     currency: 'ILS',
     color: '#5B7C6A',
     travelPay: 0,
+    swapPay: 0,
     active: true,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -30,6 +31,7 @@ const studios: Studio[] = [
     currency: 'ILS',
     color: '#6A8A9B',
     travelPay: 0,
+    swapPay: 0,
     active: true,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -160,6 +162,69 @@ describe('travel pay', () => {
       travelDays: 0,
       travelAmount: 0,
       amount: 525,
+    })
+  })
+})
+
+describe('swap pay', () => {
+  it('bills swap hours at swapPay and keeps travel on swap days', () => {
+    const withSwap: Studio[] = [{ ...studios[0], swapPay: 200, travelPay: 30 }, studios[1]]
+    const mixed: HourEntry[] = [
+      {
+        id: 'h1',
+        studioId: 's1',
+        date: '2026-08-05',
+        hours: 1.5,
+        source: 'lesson',
+        lessonId: 'l1',
+        createdAt: '2026-08-05T10:00:00.000Z',
+      },
+      {
+        id: 'h2',
+        studioId: 's1',
+        date: '2026-08-12',
+        hours: 2,
+        source: 'lesson',
+        lessonId: 'l2',
+        isSwap: true,
+        createdAt: '2026-08-12T10:00:00.000Z',
+      },
+    ]
+    const summaries = buildMonthSummaries(withSwap, mixed, [], '2026-08')
+    const s1 = summaries.find((item) => item.studioId === 's1')
+    expect(s1).toMatchObject({
+      totalHours: 3.5,
+      regularHours: 1.5,
+      hoursAmount: 225,
+      swapHours: 2,
+      swapPay: 200,
+      swapAmount: 400,
+      travelDays: 2,
+      travelAmount: 60,
+      amount: 685,
+    })
+  })
+
+  it('treats all hours as regular when swapPay is zero', () => {
+    const withFlag: HourEntry[] = [
+      {
+        id: 'h1',
+        studioId: 's1',
+        date: '2026-08-05',
+        hours: 2,
+        source: 'lesson',
+        isSwap: true,
+        createdAt: '2026-08-05T10:00:00.000Z',
+      },
+    ]
+    const summaries = buildMonthSummaries(studios, withFlag, [], '2026-08')
+    expect(summaries[0]).toMatchObject({
+      totalHours: 2,
+      regularHours: 2,
+      hoursAmount: 300,
+      swapHours: 0,
+      swapAmount: 0,
+      amount: 300,
     })
   })
 })

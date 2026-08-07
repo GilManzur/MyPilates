@@ -7,7 +7,7 @@ import { MonthSwitcher } from '../components/MonthSwitcher'
 import { Overlay } from '../components/Overlay'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
-import { currentYearMonth } from '../lib/money/calculations'
+import { currentYearMonth, formatILS } from '../lib/money/calculations'
 import { formatShortDate, fromLocalDateAndTime, localDateKey, localTimeFromIso } from '../lib/dates'
 import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
 import type { Lesson } from '../types'
@@ -21,6 +21,7 @@ const emptyForm = {
   dateLocked: false,
   weekly: false,
   untilDate: '',
+  isSwap: false,
 }
 
 export function CalendarPage() {
@@ -62,6 +63,7 @@ export function CalendarPage() {
       dateLocked: true,
       weekly: false,
       untilDate: defaultWeeklyUntilDate(fromLocalDateAndTime(date, '10:00')),
+      isSwap: false,
     })
     setError('')
     setOpen(true)
@@ -78,10 +80,14 @@ export function CalendarPage() {
       dateLocked: false,
       weekly: false,
       untilDate: '',
+      isSwap: lesson.isSwap === true,
     })
     setError('')
     setOpen(true)
   }
+
+  const selectedStudio = studios.find((studio) => studio.id === form.studioId)
+  const swapAvailable = (selectedStudio?.swapPay ?? 0) > 0
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -114,6 +120,7 @@ export function CalendarPage() {
           startAt,
           endAt,
           untilDate: form.untilDate,
+          isSwap: form.isSwap,
         })
         if (count === 0) {
           setError('לא נוצרו שיעורים — בדקי את טווח התאריכים')
@@ -126,6 +133,7 @@ export function CalendarPage() {
           title: form.title,
           startAt,
           endAt,
+          isSwap: form.isSwap,
         })
       }
       setOpen(false)
@@ -192,7 +200,16 @@ export function CalendarPage() {
               <TextSelect
                 required
                 value={form.studioId}
-                onChange={(e) => setForm((prev) => ({ ...prev, studioId: e.target.value }))}
+                onChange={(e) => {
+                  const studioId = e.target.value
+                  const studio = studios.find((item) => item.id === studioId)
+                  const canSwap = (studio?.swapPay ?? 0) > 0
+                  setForm((prev) => ({
+                    ...prev,
+                    studioId,
+                    isSwap: canSwap ? prev.isSwap : false,
+                  }))
+                }}
               >
                 {studios.map((studio) => (
                   <option key={studio.id} value={studio.id}>
@@ -201,6 +218,21 @@ export function CalendarPage() {
                 ))}
               </TextSelect>
             </Field>
+            {swapAvailable && (
+              <label className="check-field">
+                <input
+                  type="checkbox"
+                  checked={form.isSwap}
+                  onChange={(e) => setForm((prev) => ({ ...prev, isSwap: e.target.checked }))}
+                />
+                <span>
+                  <strong>החלפה</strong>
+                  <span className="check-field__hint">
+                    תעריף {formatILS(selectedStudio?.swapPay ?? 0)} לשעה
+                  </span>
+                </span>
+              </label>
+            )}
             <Field label="כותרת">
               <TextInput
                 value={form.title}

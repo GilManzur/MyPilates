@@ -59,6 +59,7 @@ export function useHourEntries(yearMonth: string) {
       lessonId: lesson.id,
       note: lesson.title,
       createdAt: new Date().toISOString(),
+      ...(lesson.isSwap ? { isSwap: true } : {}),
     }
     await getRepository().upsertHourEntry(user.uid, entry)
     await getRepository().upsertLesson(user.uid, {

@@ -15,6 +15,7 @@ type LessonInput = {
   status?: Lesson['status']
   hoursConfirmed?: boolean
   seriesId?: string
+  isSwap?: boolean
 }
 
 export function useLessons(yearMonth: string) {
@@ -54,6 +55,7 @@ export function useLessons(yearMonth: string) {
       status: input.status ?? existing?.status ?? 'scheduled',
       hoursConfirmed: input.hoursConfirmed ?? existing?.hoursConfirmed ?? false,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
+      isSwap: input.isSwap ?? existing?.isSwap ?? false,
       ...(input.seriesId || existing?.seriesId
         ? { seriesId: input.seriesId ?? existing?.seriesId }
         : {}),
@@ -79,6 +81,7 @@ export function useLessons(yearMonth: string) {
     startAt: string
     endAt: string
     untilDate: string
+    isSwap?: boolean
   }) => {
     if (!user) return 0
     const occurrences = buildWeeklyOccurrences(input.startAt, input.endAt, input.untilDate)
@@ -95,6 +98,7 @@ export function useLessons(yearMonth: string) {
         startAt: occurrence.startAt,
         endAt: occurrence.endAt,
         seriesId,
+        isSwap: input.isSwap,
       })
       lesson.createdAt = createdAt
       await repo.upsertLesson(user.uid, lesson)

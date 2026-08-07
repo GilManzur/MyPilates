@@ -17,7 +17,13 @@ export function useStudios() {
     }
     setLoading(true)
     const list = await getRepository().listStudios(user.uid)
-    setStudios(list.map((studio) => ({ ...studio, travelPay: studio.travelPay ?? 0 })))
+    setStudios(
+      list.map((studio) => ({
+        ...studio,
+        travelPay: studio.travelPay ?? 0,
+        swapPay: studio.swapPay ?? 0,
+      })),
+    )
     setLoading(false)
   }, [user])
 
@@ -31,6 +37,7 @@ export function useStudios() {
     hourlyRate: number
     color?: string
     travelPay?: number
+    swapPay?: number
   }) => {
     if (!user) return
     const existing = input.id ? studios.find((s) => s.id === input.id) : undefined
@@ -38,6 +45,10 @@ export function useStudios() {
       input.travelPay !== undefined
         ? Math.max(0, input.travelPay)
         : (existing?.travelPay ?? 0)
+    const swapPay =
+      input.swapPay !== undefined
+        ? Math.max(0, input.swapPay)
+        : (existing?.swapPay ?? 0)
     const studio: Studio = {
       id: input.id ?? createId('studio'),
       name: input.name.trim(),
@@ -45,6 +56,7 @@ export function useStudios() {
       currency: 'ILS',
       color: input.color ?? existing?.color ?? STUDIO_COLORS[studios.length % STUDIO_COLORS.length],
       travelPay,
+      swapPay,
       active: existing?.active ?? true,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     }
