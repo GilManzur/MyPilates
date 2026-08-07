@@ -3,8 +3,10 @@ type IconName =
   | 'trash'
   | 'check'
   | 'undo'
+  | 'x'
   | 'document'
   | 'print'
+  | 'moneyIn'
   | 'download'
   | 'cancel'
   | 'refund'
@@ -63,6 +65,13 @@ export function Icon({ name, size = 18 }: Props) {
           <path d="M3 13a9 9 0 1 0 3-7.7L3 7" />
         </svg>
       )
+    case 'x':
+      return (
+        <svg {...common}>
+          <path d="M18 6 6 18" />
+          <path d="M6 6l12 12" />
+        </svg>
+      )
     case 'document':
       return (
         <svg {...common}>
@@ -78,6 +87,15 @@ export function Icon({ name, size = 18 }: Props) {
           <path d="M6 9V2h12v7" />
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
           <path d="M6 14h12v8H6Z" />
+        </svg>
+      )
+    case 'moneyIn':
+      return (
+        <svg {...common}>
+          <path d="M12 3v10" />
+          <path d="M8 9l4 4 4-4" />
+          <path d="M6 14v3a3 3 0 0 0 3 3h2" />
+          <path d="M18 14V11a3 3 0 0 0-3-3" />
         </svg>
       )
     case 'download':

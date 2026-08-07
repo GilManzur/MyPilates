@@ -95,28 +95,28 @@ export function PaymentsPage() {
       ) : (
         <ul className="list panel">
           {summaries.map((summary) => (
-            <li key={summary.studioId} className="list-item list-item--column">
-              <div className="list-item">
-                <span className="color-dot" style={{ background: studioColor(summary.studioId) }} />
-                <div className="list-item__body">
-                  <p className="list-item__title">{summary.studioName}</p>
-                  <p className="list-item__meta">
-                    {summary.regularHours > 0
-                      ? `${summary.regularHours} שעות × ${formatILS(summary.hourlyRate)}`
-                      : ''}
-                    {summary.swapAmount > 0
-                      ? `${summary.regularHours > 0 ? ' · ' : ''}${summary.swapHours} החלפות × ${formatILS(summary.swapPay)}`
-                      : ''}
-                    {summary.travelAmount > 0
-                      ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
-                      : ''}
-                  </p>
-                </div>
-                <p className="amount">{formatILS(summary.amount)}</p>
+            <li key={summary.studioId} className="list-item">
+              <span className="color-dot" style={{ background: studioColor(summary.studioId) }} />
+              <div className="list-item__body">
+                <p className="list-item__title">{summary.studioName}</p>
+                <p className="list-item__meta">
+                  {summary.regularHours > 0
+                    ? `${summary.regularHours} שעות × ${formatILS(summary.hourlyRate)}`
+                    : ''}
+                  {summary.swapAmount > 0
+                    ? `${summary.regularHours > 0 ? ' · ' : ''}${summary.swapHours} החלפות × ${formatILS(summary.swapPay)}`
+                    : ''}
+                  {summary.travelAmount > 0
+                    ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
+                    : ''}
+                </p>
+              </div>
+              <p className="amount">{formatILS(summary.amount)}</p>
+              <div className="list-item__actions">
                 {summary.paymentStatus === 'confirmed' ? (
                   <IconButton
                     label="בטלי אישור תשלום"
-                    icon="undo"
+                    icon="x"
                     variant="secondary"
                     onClick={() => void unconfirmPayment(summary.studioId, summary.amount)}
                   />
@@ -129,23 +129,22 @@ export function PaymentsPage() {
                     disabled={summary.amount <= 0}
                   />
                 )}
-              </div>
-              <div className="doc-actions">
-                <IconButton
-                  label="הפק דרישת תשלום"
-                  icon="document"
-                  disabled={!business || summary.amount <= 0}
-                  onClick={() => void issueForSummary(summary, 'demand')}
-                />
-                <IconButton
-                  label="הפק קבלה"
-                  icon="print"
-                  variant="primary"
-                  disabled={
-                    !business || summary.amount <= 0 || summary.paymentStatus !== 'confirmed'
-                  }
-                  onClick={() => void issueForSummary(summary, 'receipt')}
-                />
+                {summary.paymentStatus === 'confirmed' ? (
+                  <IconButton
+                    label="הפק קבלה"
+                    icon="moneyIn"
+                    variant="primary"
+                    disabled={!business || summary.amount <= 0}
+                    onClick={() => void issueForSummary(summary, 'receipt')}
+                  />
+                ) : (
+                  <IconButton
+                    label="הפק חשבונית עסקה"
+                    icon="document"
+                    disabled={!business || summary.amount <= 0}
+                    onClick={() => void issueForSummary(summary, 'invoice')}
+                  />
+                )}
               </div>
             </li>
           ))}
@@ -153,7 +152,7 @@ export function PaymentsPage() {
       )}
       {!business && summaries.length > 0 && (
         <p className="hint">
-          כדי להפיק קבלות ודרישות תשלום, מלאי את <Link to="/settings#business">פרטי העסק</Link>{' '}
+          כדי להפיק קבלות וחשבוניות עסקה, מלאי את <Link to="/settings#business">פרטי העסק</Link>{' '}
           בהגדרות.
         </p>
       )}

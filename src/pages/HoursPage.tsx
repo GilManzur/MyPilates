@@ -25,8 +25,12 @@ export function HoursPage() {
     [studios],
   )
 
+  const now = Date.now()
   const unconfirmed = lessons.filter(
-    (lesson) => !lesson.hoursConfirmed && lesson.status !== 'cancelled',
+    (lesson) =>
+      !lesson.hoursConfirmed &&
+      lesson.status !== 'cancelled' &&
+      new Date(lesson.endAt).getTime() <= now,
   )
 
   const onManualSubmit = async (event: React.FormEvent) => {
