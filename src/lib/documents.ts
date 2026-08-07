@@ -35,6 +35,20 @@ export function paymentMethodLabel(method: PaymentMethod): string {
   return PAYMENT_METHOD_LABELS[method]
 }
 
+/** Zero-padded width for demand numbers after the `REQ-` prefix. */
+export const DEMAND_NUMBER_WIDTH = 4
+
+/**
+ * Display form of a document's running number.
+ * Demands use a separate sequence shown as `REQ-0001`; legal docs stay numeric.
+ */
+export function formatDocumentNumber(type: DocumentType, number: number): string {
+  if (type === 'demand') {
+    return `REQ-${String(number).padStart(DEMAND_NUMBER_WIDTH, '0')}`
+  }
+  return String(number)
+}
+
 function round2(value: number): number {
   return Math.round(value * 100) / 100
 }

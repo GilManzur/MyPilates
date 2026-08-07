@@ -11,6 +11,7 @@ import { useStudios } from '../hooks/useStudios'
 import type { DocumentDraft } from '../lib/data/types'
 import {
   documentTypeLabel,
+  formatDocumentNumber,
   lineItemsTotal,
   paymentMethodLabel,
   PAYMENT_BEARING_TYPES,
@@ -152,7 +153,8 @@ export function DocumentsPage() {
 
   const onCancelDocument = async (doc: FinancialDocument) => {
     if (!business) return
-    if (!window.confirm(`לבטל ${documentTypeLabel(doc.type)} מס׳ ${doc.number}?`)) return
+    const formatted = formatDocumentNumber(doc.type, doc.number)
+    if (!window.confirm(`לבטל ${documentTypeLabel(doc.type)} מס׳ ${formatted}?`)) return
     const draft: DocumentDraft = {
       type: 'cancellation',
       issuedAt: new Date().toISOString(),
@@ -161,8 +163,9 @@ export function DocumentsPage() {
       total: 0,
       currency: 'ILS',
       relatedNumber: doc.number,
+      relatedType: doc.type,
       business,
-      note: `ביטול ${documentTypeLabel(doc.type)} מס׳ ${doc.number}`,
+      note: `ביטול ${documentTypeLabel(doc.type)} מס׳ ${formatted}`,
     }
     const created = await cancel(doc.id, draft)
     if (created) setViewerId(created.id)
@@ -170,7 +173,8 @@ export function DocumentsPage() {
 
   const onRefundDocument = async (doc: FinancialDocument) => {
     if (!business) return
-    if (!window.confirm(`להפיק קבלה על החזר כספי בגין מס׳ ${doc.number}?`)) return
+    const formatted = formatDocumentNumber(doc.type, doc.number)
+    if (!window.confirm(`להפיק קבלה על החזר כספי בגין מס׳ ${formatted}?`)) return
     const draft: DocumentDraft = {
       type: 'refund',
       issuedAt: new Date().toISOString(),
@@ -179,9 +183,10 @@ export function DocumentsPage() {
       total: doc.total,
       currency: 'ILS',
       relatedNumber: doc.number,
+      relatedType: doc.type,
       payments: [{ method: 'transfer', amount: doc.total }],
       business,
-      note: `החזר כספי בגין קבלה מס׳ ${doc.number}`,
+      note: `החזר כספי בגין קבלה מס׳ ${formatted}`,
     }
     const created = await cancel(doc.id, draft)
     if (created) setViewerId(created.id)
@@ -222,7 +227,8 @@ export function DocumentsPage() {
                   <div className="list-item__main">
                     <span className="list-item__body">
                       <p className="list-item__title">
-                        {documentTypeLabel(doc.type)} · מס׳ {doc.number}
+                        {documentTypeLabel(doc.type)} · מס׳{' '}
+                        {formatDocumentNumber(doc.type, doc.number)}
                       </p>
                       <p className="list-item__meta">
                         {doc.recipient.name} · {formatShortDate(doc.issuedAt)} ·{' '}

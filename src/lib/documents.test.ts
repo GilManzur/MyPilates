@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildMonthlyLineItems,
   documentTypeLabel,
+  formatDocumentNumber,
   lineItemsTotal,
   paymentMethodLabel,
   paymentsTotal,
@@ -66,6 +67,21 @@ describe('labels', () => {
   it('labels payment methods', () => {
     expect(paymentMethodLabel('check')).toBe('המחאה')
     expect(paymentMethodLabel('transfer')).toBe('העברה בנקאית')
+  })
+})
+
+describe('formatDocumentNumber', () => {
+  it('zero-pads demands to 4 digits with REQ- prefix', () => {
+    expect(formatDocumentNumber('demand', 1)).toBe('REQ-0001')
+    expect(formatDocumentNumber('demand', 42)).toBe('REQ-0042')
+    expect(formatDocumentNumber('demand', 9999)).toBe('REQ-9999')
+  })
+
+  it('leaves legal document numbers as plain digits', () => {
+    expect(formatDocumentNumber('receipt', 1)).toBe('1')
+    expect(formatDocumentNumber('invoice', 100)).toBe('100')
+    expect(formatDocumentNumber('cancellation', 7)).toBe('7')
+    expect(formatDocumentNumber('refund', 12)).toBe('12')
   })
 })
 

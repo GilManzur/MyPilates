@@ -100,7 +100,10 @@ export interface DocumentPayment {
 export interface FinancialDocument {
   /** Internal id (createId). */
   id: string
-  /** Global sequential running number — the legal identifier. Assigned atomically. */
+  /**
+   * Sequential running number — legal docs share one counter; demands use a separate
+   * counter. Assigned atomically. Display via `formatDocumentNumber`.
+   */
   number: number
   type: DocumentType
   status: DocumentStatus
@@ -113,6 +116,8 @@ export interface FinancialDocument {
   payments?: DocumentPayment[]
   /** For cancellation/refund — the original document's running number. */
   relatedNumber?: number
+  /** For cancellation/refund — original document type (for display formatting). */
+  relatedType?: DocumentType
   /** For monthly auto-generated receipts tied to a studio's month. */
   sourceRef?: { studioId: string; yearMonth: string; paymentId?: string }
   note?: string

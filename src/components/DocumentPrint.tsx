@@ -2,6 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { formatILSExact } from '../lib/money/calculations'
 import {
   documentTypeLabel,
+  formatDocumentNumber,
   PAYMENT_BEARING_TYPES,
   paymentMethodLabel,
 } from '../lib/documents'
@@ -46,7 +47,9 @@ export function DocumentPrint({ document: doc }: { document: FinancialDocument }
         <div className="doc-print__title">
           <span className="doc-print__type">{documentTypeLabel(doc.type)}</span>
           <span className="doc-print__origin">מקור</span>
-          <span className="doc-print__number">מס׳ {doc.number}</span>
+          <span className="doc-print__number">
+            מס׳ {formatDocumentNumber(doc.type, doc.number)}
+          </span>
           <span className="doc-print__date">תאריך: {formatDate(doc.issuedAt)}</span>
         </div>
       </header>
@@ -59,7 +62,10 @@ export function DocumentPrint({ document: doc }: { document: FinancialDocument }
           {doc.recipient.address && <p>{doc.recipient.address}</p>}
         </div>
         {doc.relatedNumber != null && (
-          <p className="doc-print__related">בגין מסמך מס׳ {doc.relatedNumber}</p>
+          <p className="doc-print__related">
+            בגין מסמך מס׳{' '}
+            {formatDocumentNumber(doc.relatedType ?? 'receipt', doc.relatedNumber)}
+          </p>
         )}
       </section>
 

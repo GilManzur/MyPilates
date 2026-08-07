@@ -8,7 +8,11 @@ import { usePayments } from '../hooks/usePayments'
 import { useDocuments } from '../hooks/useDocuments'
 import { useProfile } from '../hooks/useProfile'
 import type { DocumentDraft } from '../lib/data/types'
-import { buildMonthlyLineItems, documentTypeLabel } from '../lib/documents'
+import {
+  buildMonthlyLineItems,
+  documentTypeLabel,
+  formatDocumentNumber,
+} from '../lib/documents'
 import { formatMonthTitle } from '../lib/dates'
 import type { DocumentType, StudioMonthSummary } from '../types'
 import {
@@ -58,7 +62,9 @@ export function PaymentsPage() {
     }
     const created = await issue(draft)
     if (created) {
-      setMessage(`${documentTypeLabel(type)} מס׳ ${created.number} הופק/ה עבור ${summary.studioName}`)
+      setMessage(
+        `${documentTypeLabel(type)} מס׳ ${formatDocumentNumber(type, created.number)} הופק/ה עבור ${summary.studioName}`,
+      )
     }
   }
 

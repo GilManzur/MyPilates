@@ -16,7 +16,7 @@ interface LocalStore {
   hours: Record<string, HourEntry[]>
   payments: Record<string, Payment[]>
   documents: Record<string, FinancialDocument[]>
-  counters: Record<string, { documentNumber: number }>
+  counters: Record<string, { documentNumber: number; demandNumber?: number }>
   auth: { uid: string; email: string; password: string; displayName: string } | null
 }
 
@@ -153,7 +153,11 @@ export function createLocalRepository(): DataRepository {
     },
     async issueDocument(uid, draft) {
       const store = readStore()
-      const number = (store.counters[uid]?.documentNumber ?? 0) + 1
+      const counters = store.counters[uid] ?? { documentNumber: 0 }
+      const isDemand = draft.type === 'demand'
+      const number = isDemand
+        ? (counters.demandNumber ?? 0) + 1
+        : (counters.documentNumber ?? 0) + 1
       const full: FinancialDocument = {
         ...draft,
         id: createId('doc'),
@@ -161,14 +165,17 @@ export function createLocalRepository(): DataRepository {
         status: 'issued',
         createdAt: new Date().toISOString(),
       }
-      store.counters[uid] = { documentNumber: number }
+      store.counters[uid] = isDemand
+        ? { documentNumber: counters.documentNumber ?? 0, demandNumber: number }
+        : { documentNumber: number, demandNumber: counters.demandNumber }
       store.documents[uid] = [...(store.documents[uid] ?? []), full]
       writeStore(store)
       return full
     },
     async cancelDocument(uid, originalId, draft) {
       const store = readStore()
-      const number = (store.counters[uid]?.documentNumber ?? 0) + 1
+      const counters = store.counters[uid] ?? { documentNumber: 0 }
+      const number = (counters.documentNumber ?? 0) + 1
       const full: FinancialDocument = {
         ...draft,
         id: createId('doc'),
@@ -176,13 +183,39 @@ export function createLocalRepository(): DataRepository {
         status: 'issued',
         createdAt: new Date().toISOString(),
       }
-      store.counters[uid] = { documentNumber: number }
+      store.counters[uid] = {
+        documentNumber: number,
+        demandNumber: counters.demandNumber,
+      }
       const existing = (store.documents[uid] ?? []).map((item) =>
         item.id === originalId ? { ...item, status: 'cancelled' as const } : item,
       )
       store.documents[uid] = [...existing, full]
       writeStore(store)
       return full
+    },
+    async getDocumentCounters(uid) {
+      const counters = readStore().counters[uid]
+      return {
+        documentNumber: counters?.documentNumber ?? 0,
+        demandNumber: counters?.demandNumber ?? 0,
+      }
+    },
+    async setNextDocumentNumber(uid, next) {
+      if (!Number.isInteger(next) || next < 1) {
+        throw new Error('מספר המסמך הבא חייב להיות מספר שלם חיובי')
+      }
+      const store = readStore()
+      const counters = store.counters[uid] ?? { documentNumber: 0 }
+      const current = counters.documentNumber ?? 0
+      if (next < current + 1) {
+        throw new Error(`לא ניתן לרדת מתחת למספר ${current + 1}`)
+      }
+      store.counters[uid] = {
+        documentNumber: next - 1,
+        demandNumber: counters.demandNumber,
+      }
+      writeStore(store)
     },
   }
 }

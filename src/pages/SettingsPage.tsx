@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { Logo } from '../components/Logo'
 import { BusinessDetails } from '../components/BusinessDetails'
+import { DocumentNumberSettings } from '../components/DocumentNumberSettings'
 import { StudiosManager } from '../components/StudiosManager'
 import { useAuth } from '../contexts/AuthContext'
 import { useLessons } from '../hooks/useLessons'
@@ -69,6 +70,8 @@ export function SettingsPage() {
       </section>
 
       <BusinessDetails />
+
+      <DocumentNumberSettings />
 
       <StudiosManager />
 

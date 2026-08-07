@@ -13,6 +13,12 @@ import type {
  */
 export type DocumentDraft = Omit<FinancialDocument, 'id' | 'number' | 'status' | 'createdAt'>
 
+/** Last assigned values for each sequence (0 = none issued yet). */
+export type DocumentCounters = {
+  documentNumber: number
+  demandNumber: number
+}
+
 export interface DataRepository {
   getProfile(uid: string): Promise<UserProfile | null>
   saveProfile(uid: string, profile: UserProfile): Promise<void>
@@ -38,6 +44,13 @@ export interface DataRepository {
     originalId: string,
     draft: DocumentDraft,
   ): Promise<FinancialDocument>
+  /** Last assigned legal / demand running numbers (0 if none). */
+  getDocumentCounters(uid: string): Promise<DocumentCounters>
+  /**
+   * Sets the next legal document number to issue (receipt/invoice/cancel/refund).
+   * Writes `documentNumber = next - 1`. Rejects if `next` would go backwards.
+   */
+  setNextDocumentNumber(uid: string, next: number): Promise<void>
 }
 
 export function createId(prefix: string): string {

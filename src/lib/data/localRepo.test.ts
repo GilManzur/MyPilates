@@ -47,12 +47,25 @@ describe('local document numbering', () => {
     localStorage.clear()
   })
 
-  it('assigns a strictly increasing, gap-free number per document', async () => {
+  it('uses a shared legal counter for receipt and invoice', async () => {
     const repo = createLocalRepository()
     const a = await repo.issueDocument(uid, draft())
     const b = await repo.issueDocument(uid, draft({ type: 'invoice' }))
-    const c = await repo.issueDocument(uid, draft({ type: 'demand' }))
-    expect([a.number, b.number, c.number]).toEqual([1, 2, 3])
+    expect([a.number, b.number]).toEqual([1, 2])
+  })
+
+  it('numbers demands on a separate counter', async () => {
+    const repo = createLocalRepository()
+    const receipt = await repo.issueDocument(uid, draft())
+    const demand = await repo.issueDocument(uid, draft({ type: 'demand' }))
+    const invoice = await repo.issueDocument(uid, draft({ type: 'invoice' }))
+    const demand2 = await repo.issueDocument(uid, draft({ type: 'demand' }))
+    expect(receipt.number).toBe(1)
+    expect(demand.number).toBe(1)
+    expect(invoice.number).toBe(2)
+    expect(demand2.number).toBe(2)
+    const counters = await repo.getDocumentCounters(uid)
+    expect(counters).toEqual({ documentNumber: 2, demandNumber: 2 })
   })
 
   it('lists documents newest-number first', async () => {
@@ -63,7 +76,7 @@ describe('local document numbering', () => {
     expect(list.map((d) => d.number)).toEqual([2, 1])
   })
 
-  it('cancellation issues a new number and marks the original cancelled without deleting', async () => {
+  it('cancellation issues a new legal number and marks the original cancelled without deleting', async () => {
     const repo = createLocalRepository()
     const original = await repo.issueDocument(uid, draft())
     const cancellation = await repo.cancelDocument(
@@ -88,5 +101,24 @@ describe('local document numbering', () => {
     expect(b.number).toBe(1)
     const a2 = await repo.issueDocument('user_a', draft())
     expect(a2.number).toBe(2)
+  })
+
+  it('setNextDocumentNumber seeds the next legal issue', async () => {
+    const repo = createLocalRepository()
+    await repo.setNextDocumentNumber(uid, 100)
+    const issued = await repo.issueDocument(uid, draft())
+    expect(issued.number).toBe(100)
+    const demand = await repo.issueDocument(uid, draft({ type: 'demand' }))
+    expect(demand.number).toBe(1)
+  })
+
+  it('rejects setNextDocumentNumber that would go backwards', async () => {
+    const repo = createLocalRepository()
+    await repo.issueDocument(uid, draft())
+    await repo.issueDocument(uid, draft())
+    await expect(repo.setNextDocumentNumber(uid, 2)).rejects.toThrow()
+    await repo.setNextDocumentNumber(uid, 3)
+    const next = await repo.issueDocument(uid, draft())
+    expect(next.number).toBe(3)
   })
 })

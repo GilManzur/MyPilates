@@ -146,7 +146,8 @@ export function createFirebaseRepository(): DataRepository {
     },
     async issueDocument(uid, draft) {
       const db = getDb()
-      const counterRef = doc(db, 'users', uid, 'counters', 'documentNumber')
+      const counterId = draft.type === 'demand' ? 'demandNumber' : 'documentNumber'
+      const counterRef = doc(db, 'users', uid, 'counters', counterId)
       const id = createId('doc')
       const docRef = doc(db, 'users', uid, 'documents', id)
       return runTransaction(db, async (tx) => {
@@ -186,6 +187,32 @@ export function createFirebaseRepository(): DataRepository {
         const { id: _id, ...data } = full
         tx.set(docRef, pruneUndefined(data))
         return full
+      })
+    },
+    async getDocumentCounters(uid) {
+      const db = getDb()
+      const [legalSnap, demandSnap] = await Promise.all([
+        getDoc(doc(db, 'users', uid, 'counters', 'documentNumber')),
+        getDoc(doc(db, 'users', uid, 'counters', 'demandNumber')),
+      ])
+      return {
+        documentNumber: legalSnap.exists() ? (legalSnap.data().value as number) : 0,
+        demandNumber: demandSnap.exists() ? (demandSnap.data().value as number) : 0,
+      }
+    },
+    async setNextDocumentNumber(uid, next) {
+      if (!Number.isInteger(next) || next < 1) {
+        throw new Error('מספר המסמך הבא חייב להיות מספר שלם חיובי')
+      }
+      const db = getDb()
+      const counterRef = doc(db, 'users', uid, 'counters', 'documentNumber')
+      await runTransaction(db, async (tx) => {
+        const counterSnap = await tx.get(counterRef)
+        const current = counterSnap.exists() ? (counterSnap.data().value as number) : 0
+        if (next < current + 1) {
+          throw new Error(`לא ניתן לרדת מתחת למספר ${current + 1}`)
+        }
+        tx.set(counterRef, { value: next - 1 }, { merge: true })
       })
     },
   }
