@@ -110,7 +110,15 @@ export function useLessons(yearMonth: string) {
 
   const removeLesson = async (lessonId: string) => {
     if (!user) return
-    await getRepository().deleteLesson(user.uid, lessonId)
+    const repo = getRepository()
+    // Cascade: confirmed hours stay linked by lessonId — remove them too.
+    const hourEntries = await repo.listHourEntries(user.uid)
+    await Promise.all(
+      hourEntries
+        .filter((entry) => entry.lessonId === lessonId)
+        .map((entry) => repo.deleteHourEntry(user.uid, entry.id)),
+    )
+    await repo.deleteLesson(user.uid, lessonId)
     await refresh()
   }
 

@@ -92,10 +92,10 @@ export function Icon({ name, size = 18 }: Props) {
     case 'moneyIn':
       return (
         <svg {...common}>
-          <path d="M12 3v10" />
-          <path d="M8 9l4 4 4-4" />
-          <path d="M6 14v3a3 3 0 0 0 3 3h2" />
-          <path d="M18 14V11a3 3 0 0 0-3-3" />
+          <path d="M12 2v8" />
+          <path d="M8.5 6.5 12 10l3.5-3.5" />
+          <rect x="3" y="12" width="18" height="9" rx="1.5" />
+          <circle cx="12" cy="16.5" r="2" />
         </svg>
       )
     case 'download':
