@@ -56,6 +56,7 @@ const emptyForm = {
   cardType: '',
   reference: '',
   note: '',
+  recipientConsent: false,
 }
 
 export function DocumentsPage() {
@@ -70,6 +71,10 @@ export function DocumentsPage() {
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [showSequence, setShowSequence] = useState(false)
   const [ledgerMonth, setLedgerMonth] = useState<string | null>(null)
+  const [preview, setPreview] = useState(false)
+  // True only while rasterizing for WhatsApp/PDF, so the delivered copy is
+  // stamped "מסמך ממוחשב" (חוזר 24/2004) while the paper print is not.
+  const [markComputerized, setMarkComputerized] = useState(false)
 
   const viewed = viewerId ? documents.find((doc) => doc.id === viewerId) ?? null : null
   const [copyMode, setCopyMode] = useState(false)
@@ -101,6 +106,8 @@ export function DocumentsPage() {
     if (!viewed) return
     setSharing(true)
     setShareNote('')
+    // The delivered file is a "מסמך ממוחשב" (electronically-transmitted copy).
+    setMarkComputerized(true)
     // Sharing delivers the document to the recipient: the first share produces
     // the original ("מקור") and stamps it; later shares go out as "העתק".
     if (!viewed.originalPrintedAt) {
@@ -144,6 +151,7 @@ export function DocumentsPage() {
       setShareNote('אירעה שגיאה בהכנת הקובץ. נסי שוב.')
     } finally {
       node.classList.remove('doc-print--capture')
+      setMarkComputerized(false)
       setSharing(false)
     }
   }
@@ -198,6 +206,32 @@ export function DocumentsPage() {
     return payment
   }
 
+  /** A throwaway document built from the current form, for the טיוטה preview. */
+  const buildPreviewDoc = (): FinancialDocument | null => {
+    if (!business || computedItems.length === 0) return null
+    const recipient: FinancialDocument['recipient'] = {
+      name: form.recipientName.trim() || '—',
+    }
+    if (form.recipientTaxId.trim()) recipient.taxId = form.recipientTaxId.trim()
+    if (form.recipientAddress.trim()) recipient.address = form.recipientAddress.trim()
+    return {
+      id: 'preview',
+      number: 0,
+      type: form.type,
+      status: 'issued',
+      issuedAt: new Date().toISOString(),
+      recipient,
+      lineItems: computedItems,
+      total,
+      currency: 'ILS',
+      business,
+      createdAt: new Date().toISOString(),
+      ...(carriesPayment ? { payments: [buildPayment()] } : {}),
+      ...(form.note.trim() ? { note: form.note.trim() } : {}),
+    }
+  }
+  const previewDoc = preview ? buildPreviewDoc() : null
+
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
@@ -218,6 +252,7 @@ export function DocumentsPage() {
     if (form.recipientAddress.trim()) recipient.address = form.recipientAddress.trim()
     if (form.recipientPhone.trim()) recipient.phone = form.recipientPhone.trim()
     if (form.studioId) recipient.studioId = form.studioId
+    if (form.recipientConsent) recipient.consentToDigital = true
 
     const draft: DocumentDraft = {
       type: form.type,
@@ -613,11 +648,33 @@ export function DocumentsPage() {
               <TextArea rows={2} value={form.note} onChange={(e) => setField('note', e.target.value)} />
             </Field>
 
+            <label className="check-field">
+              <input
+                type="checkbox"
+                checked={form.recipientConsent}
+                onChange={(e) => setField('recipientConsent', e.target.checked)}
+              />
+              <span>
+                <strong>הנמען הסכים לקבלת מסמכים ממוחשבים</strong>
+                <span className="check-field__hint">
+                  נדרש לפני שליחה דיגיטלית (חוזר 24/2004)
+                </span>
+              </span>
+            </label>
+
             <p className="form-hint">סה״כ: {formatILSExact(total)}</p>
             {error && <p className="form-error">{error}</p>}
             <div className="row-actions">
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 ביטול
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPreview(true)}
+                disabled={computedItems.length === 0}
+              >
+                תצוגה מקדימה
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving ? 'מפיק…' : 'הפקה'}
@@ -667,9 +724,31 @@ export function DocumentsPage() {
             <DocumentPrint
               document={viewed}
               copyLabel={copyMode ? 'העתק — נאמן למקור' : 'מקור'}
+              computerized={markComputerized}
             />
           </div>
         </div>
+        </Overlay>
+      )}
+
+      {previewDoc && (
+        <Overlay onClose={() => setPreview(false)}>
+          <div
+            className="doc-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="תצוגה מקדימה"
+            onClick={() => setPreview(false)}
+          >
+            <div className="doc-viewer__bar" onClick={(e) => e.stopPropagation()}>
+              <Button variant="secondary" onClick={() => setPreview(false)}>
+                סגירה
+              </Button>
+            </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <DocumentPrint document={previewDoc} draft />
+            </div>
+          </div>
         </Overlay>
       )}
 

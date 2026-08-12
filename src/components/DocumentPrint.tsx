@@ -33,10 +33,16 @@ function paymentDetail(payment: DocumentPayment): string {
 export function DocumentPrint({
   document: doc,
   copyLabel = 'מקור',
+  draft = false,
+  computerized = false,
 }: {
   document: FinancialDocument
   /** "מקור" for the original print, "העתק — נאמן למקור" for reprints. */
   copyLabel?: string
+  /** Renders a "טיוטה" watermark for an un-issued preview (נספח ה׳ א3). */
+  draft?: boolean
+  /** Marks an electronically-delivered copy as a "מסמך ממוחשב" (חוזר 24/2004). */
+  computerized?: boolean
 }) {
   const { business } = doc
   const showLineItems = doc.lineItems.length > 0
@@ -47,6 +53,7 @@ export function DocumentPrint({
 
   return (
     <article className="doc-print" dir="rtl">
+      {draft && <div className="doc-print__draft">טיוטה</div>}
       {doc.status === 'cancelled' && <div className="doc-print__void">מבוטל</div>}
 
       <header className="doc-print__head">
@@ -68,10 +75,13 @@ export function DocumentPrint({
         </div>
         <div className="doc-print__title">
           <span className="doc-print__type">{documentTypeLabel(doc.type)}</span>
-          <span className="doc-print__origin">{copyLabel}</span>
-          <span className="doc-print__number">
-            מס׳ {formatDocumentNumber(doc.type, doc.number)}
-          </span>
+          {!draft && <span className="doc-print__origin">{copyLabel}</span>}
+          {computerized && <span className="doc-print__computerized">מסמך ממוחשב</span>}
+          {!draft && (
+            <span className="doc-print__number">
+              מס׳ {formatDocumentNumber(doc.type, doc.number)}
+            </span>
+          )}
           <span className="doc-print__date">תאריך: {formatDate(doc.issuedAt)}</span>
         </div>
       </header>

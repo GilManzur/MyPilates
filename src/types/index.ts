@@ -116,7 +116,15 @@ export interface FinancialDocument {
   type: DocumentType
   status: DocumentStatus
   issuedAt: string
-  recipient: { name: string; taxId?: string; address?: string; phone?: string; studioId?: string }
+  recipient: {
+    name: string
+    taxId?: string
+    address?: string
+    phone?: string
+    studioId?: string
+    /** Recipient agreed to receive documents electronically (חוזר 24/2004 §2.5.2). */
+    consentToDigital?: boolean
+  }
   lineItems: DocumentLineItem[]
   total: number
   currency: 'ILS'

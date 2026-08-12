@@ -1164,6 +1164,7 @@ h2 {
 }
 
 .doc-print {
+  position: relative;
   width: 100%;
   max-width: 640px;
   background: #ffffff;
@@ -1171,6 +1172,7 @@ h2 {
   border-radius: 12px;
   padding: 28px;
   box-shadow: var(--shadow);
+  overflow: hidden;
   font-family: var(--font-body);
   line-height: 1.5;
   -webkit-print-color-adjust: exact;
@@ -1186,6 +1188,32 @@ h2 {
   letter-spacing: 4px;
   padding: 6px;
   margin-bottom: 16px;
+}
+
+/* Diagonal "טיוטה" watermark on an un-issued preview. */
+.doc-print__draft {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: 12px;
+  color: rgba(155, 77, 77, 0.14);
+  transform: rotate(-24deg);
+  z-index: 2;
+}
+
+/* "מסמך ממוחשב" marker on electronically delivered copies. */
+.doc-print__computerized {
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid #2f6f5e;
+  color: #2f6f5e;
+  border-radius: 4px;
+  padding: 0 6px;
 }
 
 .doc-print__head {
