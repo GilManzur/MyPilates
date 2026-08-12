@@ -25,9 +25,10 @@ service cloud.firestore {
         allow read, write: if isOwner();
       }
 
-      // Financial documents are sequentially numbered:
+      // Financial documents are sequentially numbered and form a קובץ קבוע:
       // create + read; the sole permitted update is issued -> cancelled
-      // (number and type must not change). Invoice/demand may be deleted.
+      // (number and type must not change). Records are NEVER deleted — an
+      // invoice/demand is voided in place via the same status transition.
       match /documents/{id} {
         allow read, create: if isOwner();
         allow update: if isOwner()
@@ -35,8 +36,7 @@ service cloud.firestore {
           && request.resource.data.status == 'cancelled'
           && request.resource.data.number == resource.data.number
           && request.resource.data.type == resource.data.type;
-        allow delete: if isOwner()
-          && (resource.data.type == 'invoice' || resource.data.type == 'demand');
+        allow delete: if false;
       }
     }
   }

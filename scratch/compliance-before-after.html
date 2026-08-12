@@ -1,0 +1,478 @@
+<title>לפני/אחרי — התאמת המסמכים להוראות ניהול ספרים</title>
+<main dir="rtl" lang="he" class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">רשות המסים · הוראה 4.01 + חוזר 24/2004</p>
+  <h1>לפני&nbsp;/&nbsp;אחרי — סגירת פערי המסמכים הדיגיטליים</h1>
+  <p class="lede">
+    שמונה שינויים המתאימים את מערכת המסמכים של YamPilates להוראות ניהול ספרים בסביבה ממוחשבת.
+    כל כרטיס מציג את המצב הקיים מול הפתרון המוצע.
+  </p>
+  <div class="caveat">
+    <span class="caveat__mark">שים לב</span>
+    אלו מוקאפים נאמנים להמחשת השינוי — לא צילומי מסך מהמערכת. הפיצ׳רים ייבנו בקוד לאחר אישור.
+    הפריטים הרגולטוריים (מיקום נתונים, חתימה) טעונים אישור רו״ח.
+  </div>
+</header>
+
+<div class="legend">
+  <span class="legend__item"><i class="dot dot--before"></i>לפני — הפער</span>
+  <span class="legend__item"><i class="dot dot--after"></i>אחרי — הפתרון</span>
+  <span class="legend__item"><i class="dot dot--warn"></i>מותנה / אישור רו״ח</span>
+</div>
+
+<!-- ============ A ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">A</span>
+    <div>
+      <h2>ביטול־במקום במקום מחיקה</h2>
+      <p class="gap">פער 1 · חשבונית/דרישה נמחקות פיזית — סותר "אין למחוק רשומה בקובץ קבוע"</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="mock mock--ui">
+        <div class="row">
+          <div class="row__meta"><strong>חשבונית עסקה INV-0042</strong><span>לירן כהן · ₪240.00</span></div>
+          <button class="btn btn--danger">🗑 מחיקה לצמיתות</button>
+        </div>
+        <p class="mock__note mock__note--bad">הרשומה נמחקת — נוצר חור ברצף המספרים.</p>
+      </div>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="mock mock--ui">
+        <div class="row">
+          <div class="row__meta"><strong>חשבונית עסקה INV-0042</strong><span>לירן כהן · ₪240.00</span></div>
+          <button class="btn btn--ghost">⊘ ביטול מסמך</button>
+        </div>
+        <div class="doc doc--mini doc--void">
+          <div class="doc__void">מבוטל</div>
+          <div class="doc__row"><span>חשבונית עסקה · INV-0042</span></div>
+        </div>
+        <p class="mock__note mock__note--good">הרשומה נשמרת ומסומנת "מבוטל" — הרצף נשמר.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ B ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">B</span>
+    <div>
+      <h2>מעקב מקור / העתק</h2>
+      <p class="gap">פער 4 · "מקור" ניתן להדפסה אינסוף פעמים — נדרש "מקור" פעם אחת בלבד</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="doc doc--mini">
+        <div class="doc__title"><span>קבלה</span><span class="doc__origin">מקור</span></div>
+        <div class="doc__meta">מס׳ 128 · 12/08/2026</div>
+      </div>
+      <p class="mock__note mock__note--bad">כל הדפסה מפיקה "מקור" מחדש — ללא הגבלה.</p>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="doc doc--mini">
+        <div class="doc__title"><span>קבלה</span><span class="doc__origin doc__origin--copy">העתק — נאמן למקור</span></div>
+        <div class="doc__meta">מס׳ 128 · 12/08/2026</div>
+      </div>
+      <p class="mock__note mock__note--good">אחרי ההדפסה הראשונה (<code>originalPrintedAt</code>) — נכפה "העתק".</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ C ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">C</span>
+    <div>
+      <h2>בדיקת רצף מסמכים</h2>
+      <p class="gap">פער 5 · אין דוח המזהה מסמכים חסרים (נספח ה׳ א5)</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="mock mock--ui mock--empty">
+        <span class="empty">אין דוח בדיקת רצף</span>
+      </div>
+      <p class="mock__note mock__note--bad">אי־אפשר לדעת אם חסר מסמך ברצף.</p>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="mock mock--ui">
+        <div class="seq"><span class="seq__label">קבלות</span><span class="pill pill--ok">רצף תקין · 1–128</span></div>
+        <div class="seq"><span class="seq__label">חשבוניות</span><span class="pill pill--bad">חסר: INV-0042</span></div>
+        <div class="seq"><span class="seq__label">דרישות</span><span class="pill pill--ok">רצף תקין · 1–17</span></div>
+      </div>
+      <p class="mock__note mock__note--good">מסך "בדיקת רצף" מסמן במפורש כל מספר חסר.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ D ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">D</span>
+    <div>
+      <h2>ריכוז חודשי מודפס</h2>
+      <p class="gap">פער 6 · אין פלט מרוכז עם כותרות החובה (נספח ה׳ א1+א2)</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="mock mock--ui">
+        <div class="flatrow"><span>קבלה 128</span><span>₪240</span></div>
+        <div class="flatrow"><span>קבלה 127</span><span>₪180</span></div>
+        <div class="flatrow"><span>חשבונית 42</span><span>₪240</span></div>
+        <p class="mock__note mock__note--bad">רשימה שטוחה — בלי תקופה, מהות, מספור עמודים או סימן סיום.</p>
+      </div>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="doc doc--mini">
+        <div class="ledger__head">
+          <strong>סטודיו ים פילאטיס</strong>
+          <span>ריכוז מסמכים · אוגוסט 2026</span>
+          <span class="ledger__sub">הופק: 12/08/2026 · עמוד 1 מתוך 1</span>
+        </div>
+        <div class="ledger__row"><span>128</span><span>קבלה</span><span>₪240</span></div>
+        <div class="ledger__row"><span>127</span><span>קבלה</span><span>₪180</span></div>
+        <div class="ledger__row ledger__row--total"><span></span><span>סה״כ נטו</span><span>₪420</span></div>
+        <div class="ledger__end">— סוף פלט —</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ E ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">E</span>
+    <div>
+      <h2>סימון "טיוטה"</h2>
+      <p class="gap">פער 7 · אין סימון טיוטה על תצוגה לפני הפקה (נספח ה׳ א3)</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="mock mock--ui mock--empty"><span class="empty">מפיקים ישר — אין תצוגה מקדימה</span></div>
+      <p class="mock__note mock__note--bad">אין שלב ביניים מסומן.</p>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="doc doc--mini doc--draft">
+        <div class="doc__watermark">טיוטה</div>
+        <div class="doc__title"><span>קבלה</span></div>
+        <div class="doc__meta">תצוגה מקדימה · טרם הופקה</div>
+      </div>
+      <p class="mock__note mock__note--good">תצוגה מקדימה עם סימן מים "טיוטה" עד ללחיצה על "הפקה".</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ F ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">F</span>
+    <div>
+      <h2>שמירת נתונים בישראל</h2>
+      <p class="gap gap--warn">פער 9 · המסד יושב בבלגיה — נדרש בישראל (25א) · מותנה באישור רו״ח</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="geo">
+        <div class="geo__globe geo__globe--eu">🇧🇪</div>
+        <div class="geo__meta"><strong>europe-west1</strong><span>בלגיה · Firestore (default)</span></div>
+      </div>
+      <p class="mock__note mock__note--bad">מיקום המסד מחוץ לישראל.</p>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="geo">
+        <div class="geo__globe geo__globe--il">🇮🇱</div>
+        <div class="geo__meta"><strong>me-west1</strong><span>תל אביב · Firestore "il"</span></div>
+      </div>
+      <p class="mock__note mock__note--good">מסד חדש בתל אביב + מיגרציית נתונים; Auth/Functions נשמרים.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ G ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">G</span>
+    <div>
+      <h2>גיבוי וריכוז אוטומטי</h2>
+      <p class="gap">פער 10 · PDF נזרק אחרי שיתוף — אין גיבוי מוסדר</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="flow">
+        <span class="node">הפקת קבלה</span><span class="arrow">←</span>
+        <span class="node node--fade">PDF זמני</span><span class="arrow">←</span>
+        <span class="node node--trash">🗑 נזרק</span>
+      </div>
+      <p class="mock__note mock__note--bad">אין עותק נשמר לאחר השיתוף.</p>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="flow">
+        <span class="node">הפקת קבלה</span><span class="arrow">←</span>
+        <span class="node node--script">Apps&nbsp;Script</span>
+      </div>
+      <div class="flow flow--split">
+        <span class="node node--drive">📁 Drive / 2026-08 / קבלה-128.pdf</span>
+        <span class="node node--sheet">📊 Sheets · שורת ריכוז</span>
+      </div>
+      <p class="mock__note mock__note--good">כל קבלה נשמרת ל-Drive לפי חודש + נרשמת בגיליון.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ H ============ -->
+<section class="card">
+  <div class="card__head">
+    <span class="badge">H</span>
+    <div>
+      <h2>בסיס "מסמך ממוחשב"</h2>
+      <p class="gap gap--warn">פערים 12–15 · סימון מסמך שנשלח דיגיטלית (בסיס, ללא PKI)</p>
+    </div>
+  </div>
+  <div class="ba">
+    <div class="pane pane--before">
+      <span class="tag tag--before">לפני</span>
+      <div class="doc doc--mini">
+        <div class="doc__title"><span>קבלה</span><span class="doc__origin">מקור</span></div>
+        <div class="doc__meta">נשלחת בוואטסאפ כ-PDF רגיל</div>
+      </div>
+      <p class="mock__note mock__note--bad">אין ציון שהמסמך ממוחשב.</p>
+    </div>
+    <div class="pane pane--after">
+      <span class="tag tag--after">אחרי</span>
+      <div class="doc doc--mini">
+        <div class="doc__title"><span>קבלה</span><span class="doc__origin doc__origin--comp">מסמך ממוחשב</span></div>
+        <div class="doc__meta">✔ הנמען הסכים לקבלה דיגיטלית</div>
+      </div>
+      <p class="mock__note mock__note--good">תווית "מסמך ממוחשב" + תיעוד הסכמת הנמען.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>YamPilates · תוכנית התאמה להוראות ניהול ספרים בסביבה ממוחשבת · ענף <code>feature/tax-compliance-docs</code></p>
+</footer>
+
+</main>
+
+<style>
+  :root {
+    --paper: #FBFAF7;
+    --surface: #FFFFFF;
+    --ink: #1B2620;
+    --muted: #5E6B63;
+    --line: #E4E8E2;
+    --accent: #4C7A64;
+    --accent-soft: #EAF1EC;
+    --danger: #B4462F;
+    --danger-soft: #F8ECE8;
+    --ok: #35795A;
+    --ok-soft: #E6F1EA;
+    --warn: #A9791F;
+    --warn-soft: #F6EFDD;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,32,27,.04), 0 8px 28px rgba(20,32,27,.06);
+    --font: "Assistant","Heebo","Rubik","Segoe UI",system-ui,"Arial",sans-serif;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #0F1310;
+      --surface: #171C18;
+      --ink: #E8EDE8;
+      --muted: #98A49C;
+      --line: #262E28;
+      --accent: #7FB396;
+      --accent-soft: #1A271F;
+      --danger: #E28468;
+      --danger-soft: #2A1A15;
+      --ok: #74C79A;
+      --ok-soft: #16241C;
+      --warn: #D7B25F;
+      --warn-soft: #241E12;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0F1310;
+    --surface: #171C18;
+    --ink: #E8EDE8;
+    --muted: #98A49C;
+    --line: #262E28;
+    --accent: #7FB396;
+    --accent-soft: #1A271F;
+    --danger: #E28468;
+    --danger-soft: #2A1A15;
+    --ok: #74C79A;
+    --ok-soft: #16241C;
+    --warn: #D7B25F;
+    --warn-soft: #241E12;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font); margin: 0; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 22px 64px; }
+
+  .eyebrow {
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(26px, 4.4vw, 40px); line-height: 1.12; margin: 0 0 12px;
+    font-weight: 800; letter-spacing: -.01em; text-wrap: balance;
+  }
+  .lede { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0 0 20px; max-width: 62ch; }
+
+  .caveat {
+    background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+    border-radius: 12px; padding: 12px 16px; font-size: 13.5px; line-height: 1.55; color: var(--ink);
+  }
+  .caveat__mark {
+    display: inline-block; font-weight: 800; color: var(--warn); margin-inline-end: 8px;
+  }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 26px 2px 8px; }
+  .legend__item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .dot--before { background: var(--danger); }
+  .dot--after { background: var(--ok); }
+  .dot--warn { background: var(--warn); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 22px; margin-top: 20px;
+  }
+  .card__head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
+  .badge {
+    flex: none; width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 18px;
+    display: grid; place-items: center;
+  }
+  .card__head h2 { margin: 2px 0 4px; font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+  .gap { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+  .gap--warn { color: var(--warn); font-weight: 600; }
+
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 620px) { .ba { grid-template-columns: 1fr; } }
+
+  .pane { border-radius: 12px; padding: 14px; position: relative; }
+  .pane--before { background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent); }
+  .pane--after  { background: var(--ok-soft);     border: 1px solid color-mix(in srgb, var(--ok) 26%, transparent); }
+
+  .tag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .08em;
+         padding: 2px 9px; border-radius: 999px; margin-bottom: 12px; }
+  .tag--before { background: var(--danger); color: #fff; }
+  .tag--after  { background: var(--ok); color: #fff; }
+
+  .mock__note { font-size: 12.5px; line-height: 1.5; margin: 10px 0 0; }
+  .mock__note--bad { color: var(--danger); }
+  .mock__note--good { color: var(--ok); }
+  code { font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-size: .88em;
+         background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 1px 5px; border-radius: 5px; }
+
+  /* generic UI mock surface */
+  .mock--ui { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .mock--empty { display: grid; place-items: center; min-height: 78px; border-style: dashed; }
+  .empty { color: var(--muted); font-size: 13px; font-style: italic; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .row__meta { display: flex; flex-direction: column; gap: 2px; }
+  .row__meta strong { font-size: 14px; } .row__meta span { font-size: 12px; color: var(--muted); }
+
+  .btn { border: 0; border-radius: 8px; font-family: inherit; font-size: 12.5px; font-weight: 700;
+         padding: 7px 12px; cursor: default; white-space: nowrap; }
+  .btn--danger { background: var(--danger); color: #fff; }
+  .btn--ghost  { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+
+  .flatrow { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 2px;
+             border-bottom: 1px dashed var(--line); font-variant-numeric: tabular-nums; }
+
+  .seq { display: flex; align-items: center; justify-content: space-between; padding: 8px 2px;
+         border-bottom: 1px solid var(--line); }
+  .seq:last-child { border-bottom: 0; }
+  .seq__label { font-size: 13.5px; font-weight: 600; }
+  .pill { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+  .pill--ok { background: var(--ok-soft); color: var(--ok); }
+  .pill--bad { background: var(--danger-soft); color: var(--danger); }
+
+  /* ---- faithful document mockup (always on white paper, like the real print) ---- */
+  .doc {
+    background: #ffffff; color: #14201b; border-radius: 10px; padding: 14px;
+    border: 1px solid #d3ddd6; position: relative; overflow: hidden;
+  }
+  .doc--mini { font-size: 13px; }
+  .doc__title { display: flex; align-items: center; gap: 8px; justify-content: space-between;
+                border-bottom: 2px solid #14201b; padding-bottom: 8px; }
+  .doc__title span:first-child { font-size: 16px; font-weight: 800; }
+  .doc__origin { font-size: 11px; border: 1px solid #14201b; border-radius: 4px; padding: 1px 7px; white-space: nowrap; }
+  .doc__origin--copy { border-color: #8a6d1f; color: #8a6d1f; }
+  .doc__origin--comp { border-color: #2f6f5e; color: #2f6f5e; font-weight: 700; }
+  .doc__meta { font-size: 12px; color: #3a463f; margin-top: 8px; }
+  .doc__row { font-size: 12px; color: #3a463f; }
+
+  .doc--void .doc__void {
+    color: #b4462f; border: 2px solid #b4462f; border-radius: 8px; text-align: center;
+    font-weight: 800; letter-spacing: 6px; padding: 5px; margin-bottom: 10px;
+  }
+  .doc--draft { }
+  .doc__watermark {
+    position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+    font-size: 42px; font-weight: 900; color: rgba(180,70,47,.16);
+    transform: rotate(-24deg); letter-spacing: 8px;
+  }
+
+  .ledger__head { display: flex; flex-direction: column; gap: 2px; border-bottom: 2px solid #14201b; padding-bottom: 8px; margin-bottom: 6px; }
+  .ledger__head strong { font-size: 14px; }
+  .ledger__head span { font-size: 12px; color: #3a463f; }
+  .ledger__sub { font-size: 11px !important; }
+  .ledger__row { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; font-size: 12.5px;
+                 padding: 5px 0; border-bottom: 1px solid #e4ebe6; font-variant-numeric: tabular-nums; }
+  .ledger__row--total { border-top: 2px solid #14201b; border-bottom: 0; font-weight: 800; margin-top: 2px; }
+  .ledger__end { text-align: center; font-size: 11px; color: #6a766f; letter-spacing: 3px; margin-top: 8px; }
+
+  /* geo (F) */
+  .geo { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line);
+         border-radius: 10px; padding: 12px; }
+  .geo__globe { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; }
+  .geo__globe--eu { background: var(--danger-soft); }
+  .geo__globe--il { background: var(--ok-soft); }
+  .geo__meta { display: flex; flex-direction: column; }
+  .geo__meta strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .geo__meta span { font-size: 12.5px; color: var(--muted); }
+
+  /* flow (G) */
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .flow--split { margin-top: 8px; }
+  .node { background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+          padding: 7px 11px; font-size: 12.5px; font-weight: 600; }
+  .node--fade { opacity: .6; }
+  .node--trash { border-color: color-mix(in srgb,var(--danger) 40%,transparent); color: var(--danger); }
+  .node--script { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .node--drive, .node--sheet { border-color: color-mix(in srgb,var(--ok) 40%,transparent); color: var(--ok);
+          font-variant-numeric: tabular-nums; }
+  .arrow { color: var(--muted); font-weight: 800; }
+
+  .foot { margin-top: 30px; text-align: center; font-size: 12.5px; color: var(--muted); }
+  .foot code { font-size: .9em; }
+</style>

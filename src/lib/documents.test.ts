@@ -5,7 +5,7 @@ import {
   counterKeyForDocumentType,
   documentTypeLabel,
   formatDocumentNumber,
-  isDeletableDocumentType,
+  isVoidableDocumentType,
   lineItemsTotal,
   paymentMethodLabel,
   paymentsTotal,
@@ -129,13 +129,13 @@ describe('counterKeyForDocumentType', () => {
   })
 })
 
-describe('isDeletableDocumentType', () => {
+describe('isVoidableDocumentType', () => {
   it('allows only invoice and demand', () => {
-    expect(isDeletableDocumentType('invoice')).toBe(true)
-    expect(isDeletableDocumentType('demand')).toBe(true)
-    expect(isDeletableDocumentType('receipt')).toBe(false)
-    expect(isDeletableDocumentType('cancellation')).toBe(false)
-    expect(isDeletableDocumentType('refund')).toBe(false)
+    expect(isVoidableDocumentType('invoice')).toBe(true)
+    expect(isVoidableDocumentType('demand')).toBe(true)
+    expect(isVoidableDocumentType('receipt')).toBe(false)
+    expect(isVoidableDocumentType('cancellation')).toBe(false)
+    expect(isVoidableDocumentType('refund')).toBe(false)
   })
 })
 

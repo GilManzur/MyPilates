@@ -7,6 +7,7 @@ import {
   query,
   runTransaction,
   setDoc,
+  updateDoc,
   where,
   orderBy,
   type Firestore,
@@ -20,7 +21,7 @@ import type {
   Studio,
   UserProfile,
 } from '../../types'
-import { counterKeyForDocumentType, isDeletableDocumentType } from '../documents'
+import { counterKeyForDocumentType, isVoidableDocumentType } from '../documents'
 import type { DataRepository, SeedableDocumentCounter } from './types'
 import { createId } from './types'
 
@@ -190,16 +191,17 @@ export function createFirebaseRepository(): DataRepository {
         return full
       })
     },
-    async deleteDocument(uid, documentId) {
+    async voidDocument(uid, documentId) {
       const db = getDb()
       const docRef = doc(db, 'users', uid, 'documents', documentId)
       const snap = await getDoc(docRef)
       if (!snap.exists()) throw new Error('המסמך לא נמצא')
       const type = snap.data().type as FinancialDocument['type']
-      if (!isDeletableDocumentType(type)) {
-        throw new Error('ניתן למחוק רק חשבונית עסקה או דרישת תשלום')
+      if (!isVoidableDocumentType(type)) {
+        throw new Error('ניתן לבטל כאן רק חשבונית עסקה או דרישת תשלום')
       }
-      await deleteDoc(docRef)
+      // Void in place — the record is kept, never deleted (קובץ קבוע).
+      await updateDoc(docRef, { status: 'cancelled' })
     },
     async getDocumentCounters(uid) {
       const db = getDb()

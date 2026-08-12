@@ -131,18 +131,23 @@ describe('local document numbering', () => {
     expect(receipt.number).toBe(1)
   })
 
-  it('deletes invoice and demand but rejects deleting a receipt', async () => {
+  it('voids invoice and demand in place but rejects voiding a receipt', async () => {
     const repo = createLocalRepository()
     const receipt = await repo.issueDocument(uid, draft())
     const invoice = await repo.issueDocument(uid, draft({ type: 'invoice' }))
     const demand = await repo.issueDocument(uid, draft({ type: 'demand' }))
 
-    await repo.deleteDocument(uid, invoice.id)
-    await repo.deleteDocument(uid, demand.id)
-    await expect(repo.deleteDocument(uid, receipt.id)).rejects.toThrow()
+    await repo.voidDocument(uid, invoice.id)
+    await repo.voidDocument(uid, demand.id)
+    await expect(repo.voidDocument(uid, receipt.id)).rejects.toThrow()
 
+    // Records are kept (never deleted); invoice/demand are marked cancelled.
     const list = await repo.listDocuments(uid)
-    expect(list.map((d) => d.id)).toEqual([receipt.id])
+    expect(list).toHaveLength(3)
+    const byId = Object.fromEntries(list.map((d) => [d.id, d.status]))
+    expect(byId[invoice.id]).toBe('cancelled')
+    expect(byId[demand.id]).toBe('cancelled')
+    expect(byId[receipt.id]).toBe('issued')
   })
 
   it('rejects setNextDocumentNumber that would go backwards', async () => {

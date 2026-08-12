@@ -27,11 +27,15 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 /** Document types that record received money (and therefore carry a payment breakdown). */
 export const PAYMENT_BEARING_TYPES: DocumentType[] = ['receipt', 'refund']
 
-/** Non-legal docs that may be hard-deleted (no cancellation document). */
-export const DELETABLE_DOCUMENT_TYPES: DocumentType[] = ['invoice', 'demand']
+/**
+ * Non-payment docs voided in place (status issued → cancelled) rather than
+ * deleted — a קובץ קבוע record may never be removed. Receipts are instead
+ * reversed with a cancellation/refund document (a proper סטורנו).
+ */
+export const VOIDABLE_DOCUMENT_TYPES: DocumentType[] = ['invoice', 'demand']
 
-export function isDeletableDocumentType(type: DocumentType): boolean {
-  return DELETABLE_DOCUMENT_TYPES.includes(type)
+export function isVoidableDocumentType(type: DocumentType): boolean {
+  return VOIDABLE_DOCUMENT_TYPES.includes(type)
 }
 
 /** Counter key used when issuing a document of this type. */

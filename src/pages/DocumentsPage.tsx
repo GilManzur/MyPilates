@@ -15,7 +15,7 @@ import type { DocumentDraft } from '../lib/data/types'
 import {
   documentTypeLabel,
   formatDocumentNumber,
-  isDeletableDocumentType,
+  isVoidableDocumentType,
   lineItemsTotal,
   paymentMethodLabel,
   PAYMENT_BEARING_TYPES,
@@ -57,7 +57,7 @@ const emptyForm = {
 }
 
 export function DocumentsPage() {
-  const { documents, loading, issue, cancel, remove } = useDocuments()
+  const { documents, loading, issue, cancel, voidDoc } = useDocuments()
   const { business } = useProfile()
   const { studios } = useStudios()
   const [open, setOpen] = useState(false)
@@ -243,17 +243,16 @@ export function DocumentsPage() {
     })
   }
 
-  const onDeleteDocument = (doc: FinancialDocument) => {
-    if (!isDeletableDocumentType(doc.type)) return
+  const onVoidDocument = (doc: FinancialDocument) => {
+    if (!isVoidableDocumentType(doc.type) || doc.status !== 'issued') return
     const formatted = formatDocumentNumber(doc.type, doc.number)
     setConfirm({
-      title: `למחוק ${documentTypeLabel(doc.type)} מס׳ ${formatted}?`,
-      message: 'המסמך יימחק לצמיתות.',
-      confirmLabel: 'מחקי',
+      title: `לבטל ${documentTypeLabel(doc.type)} מס׳ ${formatted}?`,
+      message: 'המסמך יסומן כמבוטל ויישמר לצמיתות (לא יימחק). פעולה זו אינה הפיכה.',
+      confirmLabel: 'בטלי מסמך',
       onConfirm: () => {
         void (async () => {
-          await remove(doc.id)
-          if (viewerId === doc.id) setViewerId(null)
+          await voidDoc(doc.id)
         })()
       },
     })
@@ -319,7 +318,7 @@ export function DocumentsPage() {
             {documents.map((doc) => {
               const canCancel = doc.status === 'issued' && doc.type === 'receipt'
               const canRefund = doc.status === 'issued' && doc.type === 'receipt'
-              const canDelete = isDeletableDocumentType(doc.type)
+              const canVoid = isVoidableDocumentType(doc.type) && doc.status === 'issued'
               return (
                 <li key={doc.id} className="list-item list-item--action">
                   <div className="list-item__main">
@@ -356,12 +355,12 @@ export function DocumentsPage() {
                         onClick={() => void onCancelDocument(doc)}
                       />
                     )}
-                    {canDelete && (
+                    {canVoid && (
                       <IconButton
-                        label="מחיקה"
-                        icon="trash"
+                        label="ביטול מסמך"
+                        icon="cancel"
                         variant="danger"
-                        onClick={() => void onDeleteDocument(doc)}
+                        onClick={() => void onVoidDocument(doc)}
                       />
                     )}
                   </div>

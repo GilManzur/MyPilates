@@ -6,7 +6,7 @@ import type {
   Studio,
   UserProfile,
 } from '../../types'
-import { counterKeyForDocumentType, isDeletableDocumentType } from '../documents'
+import { counterKeyForDocumentType, isVoidableDocumentType } from '../documents'
 import type { DataRepository, SeedableDocumentCounter } from './types'
 import { createId } from './types'
 
@@ -203,15 +203,18 @@ export function createLocalRepository(): DataRepository {
       writeStore(store)
       return full
     },
-    async deleteDocument(uid, documentId) {
+    async voidDocument(uid, documentId) {
       const store = readStore()
       const existing = store.documents[uid] ?? []
       const target = existing.find((item) => item.id === documentId)
       if (!target) throw new Error('המסמך לא נמצא')
-      if (!isDeletableDocumentType(target.type)) {
-        throw new Error('ניתן למחוק רק חשבונית עסקה או דרישת תשלום')
+      if (!isVoidableDocumentType(target.type)) {
+        throw new Error('ניתן לבטל כאן רק חשבונית עסקה או דרישת תשלום')
       }
-      store.documents[uid] = existing.filter((item) => item.id !== documentId)
+      // Void in place — the record is kept, never deleted (קובץ קבוע).
+      store.documents[uid] = existing.map((item) =>
+        item.id === documentId ? { ...item, status: 'cancelled' as const } : item,
+      )
       writeStore(store)
     },
     async getDocumentCounters(uid) {

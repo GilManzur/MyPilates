@@ -51,8 +51,12 @@ export interface DataRepository {
     originalId: string,
     draft: DocumentDraft,
   ): Promise<FinancialDocument>
-  /** Deletes a non-legal document (invoice / demand). Rejects other types. */
-  deleteDocument(uid: string, documentId: string): Promise<void>
+  /**
+   * Voids a document in place (status issued → cancelled) without removing it —
+   * a קובץ קבוע record may never be deleted. Accepts invoice / demand; rejects
+   * other types (receipts are reversed via cancelDocument instead).
+   */
+  voidDocument(uid: string, documentId: string): Promise<void>
   /** Last assigned running numbers per sequence (0 if none). */
   getDocumentCounters(uid: string): Promise<DocumentCounters>
   /**
