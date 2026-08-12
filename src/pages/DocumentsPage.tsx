@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
@@ -9,7 +9,7 @@ import { DocumentLedger } from '../components/DocumentLedger'
 import { SequenceCheck } from '../components/SequenceCheck'
 import { Overlay } from '../components/Overlay'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
-import { elementToPdfBlob, shareDocumentPdf } from '../lib/share/documentPdf'
+import { archiveReceiptPdf, elementToPdfBlob, shareDocumentPdf } from '../lib/share/documentPdf'
 import { useDocuments } from '../hooks/useDocuments'
 import { useProfile } from '../hooks/useProfile'
 import { useStudios } from '../hooks/useStudios'
@@ -75,6 +75,8 @@ export function DocumentsPage() {
   // True only while rasterizing for WhatsApp/PDF, so the delivered copy is
   // stamped "מסמך ממוחשב" (חוזר 24/2004) while the paper print is not.
   const [markComputerized, setMarkComputerized] = useState(false)
+  // A freshly-issued receipt awaiting its automatic Drive/Sheets backup.
+  const [archivePendingId, setArchivePendingId] = useState<string | null>(null)
 
   const viewed = viewerId ? documents.find((doc) => doc.id === viewerId) ?? null : null
   const [copyMode, setCopyMode] = useState(false)
@@ -101,6 +103,50 @@ export function DocumentsPage() {
     // Let React paint the correct מקור/העתק label before the print dialog opens.
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
   }
+
+  // Back up a freshly-issued receipt to Drive/Sheets once its viewer has painted.
+  useEffect(() => {
+    if (!archivePendingId || viewerId !== archivePendingId) return
+    // Skip all work (including rasterization) when archiving is not configured.
+    if (!import.meta.env.VITE_ARCHIVE_WEBAPP_URL) {
+      setArchivePendingId(null)
+      return
+    }
+    const id = archivePendingId
+    const target = documents.find((d) => d.id === id)
+    if (!target) return
+    let cancelled = false
+    void (async () => {
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      )
+      if (cancelled) return
+      const node = document
+        .getElementById('print-root')
+        ?.querySelector('.doc-print') as HTMLElement | null
+      if (node) {
+        try {
+          const blob = await elementToPdfBlob(node)
+          const number = formatDocumentNumber(target.type, target.number)
+          await archiveReceiptPdf(blob, {
+            fileName: `${documentTypeLabel(target.type)}-${number}.pdf`,
+            yearMonth: target.issuedAt.slice(0, 7),
+            number,
+            type: target.type,
+            issuedAt: target.issuedAt,
+            recipientName: target.recipient.name,
+            total: target.total,
+          })
+        } catch {
+          // Backup is best-effort; never block or alert the user.
+        }
+      }
+      if (!cancelled) setArchivePendingId((cur) => (cur === id ? null : cur))
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [archivePendingId, viewerId, documents])
 
   const onShareWhatsApp = async () => {
     if (!viewed) return
@@ -270,7 +316,12 @@ export function DocumentsPage() {
     try {
       const created = await issue(draft)
       setOpen(false)
-      if (created) openViewer(created.id)
+      setPreview(false)
+      if (created) {
+        openViewer(created.id)
+        // Receipts are backed up to Drive/Sheets from the rendered viewer node.
+        if (created.type === 'receipt') setArchivePendingId(created.id)
+      }
     } finally {
       setSaving(false)
     }

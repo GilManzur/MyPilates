@@ -90,6 +90,63 @@ export async function shareDocumentPdf(opts: {
   return 'fallback'
 }
 
+export type ReceiptArchiveMeta = {
+  fileName: string
+  /** 'YYYY-MM' of issue — the Drive subfolder the PDF is filed under. */
+  yearMonth: string
+  number: string
+  type: string
+  issuedAt: string
+  recipientName: string
+  total: number
+}
+
+export type ArchiveOutcome = 'ok' | 'skipped' | 'error'
+
+/**
+ * Fire-and-forget backup: POSTs the receipt PDF + metadata to a Google Apps
+ * Script web app (running in the studio owner's Google account) that files the
+ * PDF into a per-month Drive folder and appends a row to a ledger Sheet.
+ *
+ * No-ops (returns 'skipped') when VITE_ARCHIVE_WEBAPP_URL is unset, so local
+ * and un-configured environments are unaffected. Uses a `no-cors` text/plain
+ * POST — a "simple request" that avoids CORS preflight, which Apps Script web
+ * apps do not support; the response is opaque, which is fine for a backup.
+ */
+export async function archiveReceiptPdf(
+  blob: Blob,
+  meta: ReceiptArchiveMeta,
+): Promise<ArchiveOutcome> {
+  const url = import.meta.env.VITE_ARCHIVE_WEBAPP_URL as string | undefined
+  const token = (import.meta.env.VITE_ARCHIVE_TOKEN as string | undefined) ?? ''
+  if (!url) return 'skipped'
+  try {
+    const pdfBase64 = await blobToBase64(blob)
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ token, pdfBase64, ...meta }),
+    })
+    return 'ok'
+  } catch {
+    return 'error'
+  }
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      // Strip the `data:application/pdf;base64,` prefix.
+      resolve(result.slice(result.indexOf(',') + 1))
+    }
+    reader.onerror = () => reject(new Error('failed to read pdf blob'))
+    reader.readAsDataURL(blob)
+  })
+}
+
 function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
