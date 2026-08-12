@@ -6,7 +6,10 @@ import { logger } from 'firebase-functions'
 
 initializeApp()
 
-const db = getFirestore()
+// Target the same Firestore database as the client. Set FIRESTORE_DB_ID (e.g.
+// 'il' in me-west1) once the data has been migrated to Israel — see
+// docs/firestore-israel-migration.md. Defaults to the '(default)' database.
+const db = getFirestore(process.env.FIRESTORE_DB_ID || '(default)')
 const messaging = getMessaging()
 
 async function sendToTokens(tokens, payload) {

@@ -20,10 +20,15 @@ let auth: Auth | undefined
 let db: Firestore | undefined
 let messaging: Messaging | undefined
 
+// Firestore database id. Defaults to '(default)'. Set VITE_FIRESTORE_DB_ID to a
+// named database (e.g. 'il' in me-west1 / Tel Aviv) for the data-residency
+// requirement (חוזר 24/2004 §2.7.1) — see docs/firestore-israel-migration.md.
+const firestoreDbId = (import.meta.env.VITE_FIRESTORE_DB_ID as string | undefined) || '(default)'
+
 if (!useLocalData) {
   app = initializeApp(firebaseConfig)
   auth = getAuth(app)
-  db = getFirestore(app)
+  db = getFirestore(app, firestoreDbId)
 }
 
 export { app, auth, db }
