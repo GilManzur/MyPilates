@@ -20,7 +20,8 @@ import type {
   Studio,
   UserProfile,
 } from '../../types'
-import type { DataRepository } from './types'
+import { counterKeyForDocumentType, isDeletableDocumentType } from '../documents'
+import type { DataRepository, SeedableDocumentCounter } from './types'
 import { createId } from './types'
 
 function getDb(): Firestore {
@@ -146,7 +147,7 @@ export function createFirebaseRepository(): DataRepository {
     },
     async issueDocument(uid, draft) {
       const db = getDb()
-      const counterId = draft.type === 'demand' ? 'demandNumber' : 'documentNumber'
+      const counterId = counterKeyForDocumentType(draft.type)
       const counterRef = doc(db, 'users', uid, 'counters', counterId)
       const id = createId('doc')
       const docRef = doc(db, 'users', uid, 'documents', id)
@@ -189,23 +190,36 @@ export function createFirebaseRepository(): DataRepository {
         return full
       })
     },
+    async deleteDocument(uid, documentId) {
+      const db = getDb()
+      const docRef = doc(db, 'users', uid, 'documents', documentId)
+      const snap = await getDoc(docRef)
+      if (!snap.exists()) throw new Error('המסמך לא נמצא')
+      const type = snap.data().type as FinancialDocument['type']
+      if (!isDeletableDocumentType(type)) {
+        throw new Error('ניתן למחוק רק חשבונית עסקה או דרישת תשלום')
+      }
+      await deleteDoc(docRef)
+    },
     async getDocumentCounters(uid) {
       const db = getDb()
-      const [legalSnap, demandSnap] = await Promise.all([
+      const [legalSnap, invoiceSnap, demandSnap] = await Promise.all([
         getDoc(doc(db, 'users', uid, 'counters', 'documentNumber')),
+        getDoc(doc(db, 'users', uid, 'counters', 'invoiceNumber')),
         getDoc(doc(db, 'users', uid, 'counters', 'demandNumber')),
       ])
       return {
         documentNumber: legalSnap.exists() ? (legalSnap.data().value as number) : 0,
+        invoiceNumber: invoiceSnap.exists() ? (invoiceSnap.data().value as number) : 0,
         demandNumber: demandSnap.exists() ? (demandSnap.data().value as number) : 0,
       }
     },
-    async setNextDocumentNumber(uid, next) {
+    async setNextDocumentNumber(uid, next, counter: SeedableDocumentCounter = 'documentNumber') {
       if (!Number.isInteger(next) || next < 1) {
         throw new Error('מספר המסמך הבא חייב להיות מספר שלם חיובי')
       }
       const db = getDb()
-      const counterRef = doc(db, 'users', uid, 'counters', 'documentNumber')
+      const counterRef = doc(db, 'users', uid, 'counters', counter)
       await runTransaction(db, async (tx) => {
         const counterSnap = await tx.get(counterRef)
         const current = counterSnap.exists() ? (counterSnap.data().value as number) : 0

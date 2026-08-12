@@ -14,6 +14,7 @@ import {
   formatDocumentNumber,
 } from '../lib/documents'
 import { formatMonthTitle } from '../lib/dates'
+import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import type { DocumentType, StudioMonthSummary } from '../types'
 import {
   buildMonthSummaries,
@@ -25,9 +26,11 @@ import {
 
 export function PaymentsPage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
-  const { studios } = useStudios()
-  const { entries } = useHourEntries(yearMonth)
-  const { payments, confirmPayment, unconfirmPayment } = usePayments(yearMonth)
+  const { studios, loading: studiosLoading } = useStudios()
+  const { entries, loading: entriesLoading } = useHourEntries(yearMonth)
+  const { payments, loading: paymentsLoading, confirmPayment, unconfirmPayment } =
+    usePayments(yearMonth)
+  const loading = studiosLoading || entriesLoading || paymentsLoading
   const { issue } = useDocuments()
   const { business } = useProfile()
   const [message, setMessage] = useState('')
@@ -38,7 +41,7 @@ export function PaymentsPage() {
   )
 
   const studioColor = (studioId: string) =>
-    studios.find((studio) => studio.id === studioId)?.color ?? '#5B7C6A'
+    studios.find((studio) => studio.id === studioId)?.color ?? DEFAULT_STUDIO_COLOR
 
   const issueForSummary = async (summary: StudioMonthSummary, type: DocumentType) => {
     if (!business) return
@@ -90,7 +93,9 @@ export function PaymentsPage() {
         <p className="hint">סה״כ החודש: {formatILS(totalAmount(summaries))}</p>
       </section>
 
-      {summaries.length === 0 ? (
+      {loading ? (
+        <p className="empty panel">טוען…</p>
+      ) : summaries.length === 0 ? (
         <p className="empty panel">אין סטודיוים עם שעות בחודש זה — אין מה לכלול בתשלום.</p>
       ) : (
         <ul className="list panel">

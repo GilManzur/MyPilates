@@ -40,5 +40,12 @@ export function useDocuments() {
     return issued
   }
 
-  return { documents, loading, refresh, issue, cancel }
+  /** Hard-deletes an invoice or demand. */
+  const remove = async (documentId: string) => {
+    if (!user) return
+    await getRepository().deleteDocument(user.uid, documentId)
+    await refresh()
+  }
+
+  return { documents, loading, refresh, issue, cancel, remove }
 }

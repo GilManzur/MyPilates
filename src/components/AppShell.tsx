@@ -25,7 +25,7 @@ export function AppShell() {
           </div>
         </div>
         <NavLink to="/settings" className="icon-btn" aria-label="הגדרות">
-          ⚙
+          <Icon name="settings" size={22} />
         </NavLink>
       </header>
 

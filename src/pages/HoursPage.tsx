@@ -3,22 +3,39 @@ import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { Field, TextArea, TextInput, TextSelect } from '../components/Field'
 import { MonthSwitcher } from '../components/MonthSwitcher'
+import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { useHourEntries } from '../hooks/useHourEntries'
+import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import { currentYearMonth, formatILS } from '../lib/money/calculations'
 import { formatLessonTime, formatShortDate } from '../lib/dates'
 
 export function HoursPage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
   const { studios } = useStudios()
-  const { lessons, refresh: refreshLessons } = useLessons(yearMonth)
-  const { entries, addManualHours, confirmLessonHours, removeEntry } = useHourEntries(yearMonth)
+  const { lessons, loading: lessonsLoading, refresh: refreshLessons } = useLessons(yearMonth)
+  const {
+    entries,
+    loading: hoursLoading,
+    addManualHours,
+    confirmLessonHours,
+    removeEntry,
+  } = useHourEntries(yearMonth)
   const [studioId, setStudioId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [hours, setHours] = useState('1')
   const [note, setNote] = useState('')
   const [message, setMessage] = useState('')
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+
+  const confirmRemoveEntry = (entryId: string) =>
+    setConfirm({
+      title: 'למחוק את רשומת השעות?',
+      message: 'הרשומה תוסר מהחודש. אם היא הגיעה משיעור, ניתן לאשר אותו שוב מאוחר יותר.',
+      confirmLabel: 'מחקי',
+      onConfirm: () => void removeEntry(entryId),
+    })
 
   const studioMap = useMemo(
     () => Object.fromEntries(studios.map((studio) => [studio.id, studio])),
@@ -71,7 +88,9 @@ export function HoursPage() {
 
       <section className="panel">
         <h2>אישור משיעור ביומן</h2>
-        {unconfirmed.length === 0 ? (
+        {lessonsLoading ? (
+          <p className="empty">טוען…</p>
+        ) : unconfirmed.length === 0 ? (
           <p className="empty">אין שיעורים שממתינים לאישור שעות.</p>
         ) : (
           <ul className="list">
@@ -79,7 +98,7 @@ export function HoursPage() {
               <li key={lesson.id} className="list-item">
                 <span
                   className="color-dot"
-                  style={{ background: studioMap[lesson.studioId]?.color ?? '#5B7C6A' }}
+                  style={{ background: studioMap[lesson.studioId]?.color ?? DEFAULT_STUDIO_COLOR }}
                 />
                 <div className="list-item__body">
                   <p className="list-item__title">{lesson.title}</p>
@@ -144,7 +163,9 @@ export function HoursPage() {
 
       <section className="panel">
         <h2>רשומות החודש</h2>
-        {entries.length === 0 ? (
+        {hoursLoading ? (
+          <p className="empty">טוען…</p>
+        ) : entries.length === 0 ? (
           <p className="empty">עדיין אין שעות בחודש הזה.</p>
         ) : (
           <ul className="list">
@@ -152,7 +173,7 @@ export function HoursPage() {
               <li key={entry.id} className="list-item">
                 <span
                   className="color-dot"
-                  style={{ background: studioMap[entry.studioId]?.color ?? '#5B7C6A' }}
+                  style={{ background: studioMap[entry.studioId]?.color ?? DEFAULT_STUDIO_COLOR }}
                 />
                 <div className="list-item__body">
                   <p className="list-item__title">
@@ -167,13 +188,15 @@ export function HoursPage() {
                   label="מחק"
                   icon="trash"
                   variant="danger"
-                  onClick={() => void removeEntry(entry.id)}
+                  onClick={() => confirmRemoveEntry(entry.id)}
                 />
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
     </div>
   )
 }

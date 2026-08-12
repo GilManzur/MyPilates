@@ -15,9 +15,16 @@ export type DocumentDraft = Omit<FinancialDocument, 'id' | 'number' | 'status' |
 
 /** Last assigned values for each sequence (0 = none issued yet). */
 export type DocumentCounters = {
+  /** Receipts, cancellations, refunds. */
   documentNumber: number
+  /** Business invoices (חשבונית עסקה), displayed as INV-XXXX. */
+  invoiceNumber: number
+  /** Payment demands (דרישת תשלום), displayed as REQ-XXXX. */
   demandNumber: number
 }
+
+/** Sequences that can be seeded from settings (demands always start at 1). */
+export type SeedableDocumentCounter = 'documentNumber' | 'invoiceNumber'
 
 export interface DataRepository {
   getProfile(uid: string): Promise<UserProfile | null>
@@ -34,7 +41,7 @@ export interface DataRepository {
   listPayments(uid: string, yearMonth: string): Promise<Payment[]>
   upsertPayment(uid: string, payment: Payment): Promise<void>
   addFcmToken(uid: string, token: string): Promise<void>
-  /** Financial documents. Immutable & sequentially numbered — no delete/update. */
+  /** Financial documents — legal ones are immutable except cancel; invoice/demand may be deleted. */
   listDocuments(uid: string): Promise<FinancialDocument[]>
   /** Assigns the next running number and persists atomically. */
   issueDocument(uid: string, draft: DocumentDraft): Promise<FinancialDocument>
@@ -44,18 +51,27 @@ export interface DataRepository {
     originalId: string,
     draft: DocumentDraft,
   ): Promise<FinancialDocument>
-  /** Last assigned legal / demand running numbers (0 if none). */
+  /** Deletes a non-legal document (invoice / demand). Rejects other types. */
+  deleteDocument(uid: string, documentId: string): Promise<void>
+  /** Last assigned running numbers per sequence (0 if none). */
   getDocumentCounters(uid: string): Promise<DocumentCounters>
   /**
-   * Sets the next legal document number to issue (receipt/invoice/cancel/refund).
-   * Writes `documentNumber = next - 1`. Rejects if `next` would go backwards.
+   * Sets the next number to issue for a seedable sequence.
+   * Writes `counter = next - 1`. Rejects if `next` would go backwards.
    */
-  setNextDocumentNumber(uid: string, next: number): Promise<void>
+  setNextDocumentNumber(
+    uid: string,
+    next: number,
+    counter?: SeedableDocumentCounter,
+  ): Promise<void>
 }
 
 export function createId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().slice(0, 8)}`
 }
+
+/** Fallback color for a studio with no color set (also the calendar dot default). */
+export const DEFAULT_STUDIO_COLOR = '#5B7C6A'
 
 /** Distinct studio colors for calendar visibility. */
 export const STUDIO_COLORS = [

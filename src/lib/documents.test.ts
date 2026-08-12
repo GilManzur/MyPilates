@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  amountToHebrewWords,
   buildMonthlyLineItems,
+  counterKeyForDocumentType,
   documentTypeLabel,
   formatDocumentNumber,
+  isDeletableDocumentType,
   lineItemsTotal,
   paymentMethodLabel,
   paymentsTotal,
@@ -103,11 +106,66 @@ describe('formatDocumentNumber', () => {
     expect(formatDocumentNumber('demand', 9999)).toBe('REQ-9999')
   })
 
-  it('leaves legal document numbers as plain digits', () => {
+  it('zero-pads invoices to 4 digits with INV- prefix', () => {
+    expect(formatDocumentNumber('invoice', 1)).toBe('INV-0001')
+    expect(formatDocumentNumber('invoice', 42)).toBe('INV-0042')
+    expect(formatDocumentNumber('invoice', 9999)).toBe('INV-9999')
+  })
+
+  it('leaves receipt/cancel/refund numbers as plain digits', () => {
     expect(formatDocumentNumber('receipt', 1)).toBe('1')
-    expect(formatDocumentNumber('invoice', 100)).toBe('100')
     expect(formatDocumentNumber('cancellation', 7)).toBe('7')
     expect(formatDocumentNumber('refund', 12)).toBe('12')
+  })
+})
+
+describe('counterKeyForDocumentType', () => {
+  it('maps each document type to its sequence', () => {
+    expect(counterKeyForDocumentType('receipt')).toBe('documentNumber')
+    expect(counterKeyForDocumentType('cancellation')).toBe('documentNumber')
+    expect(counterKeyForDocumentType('refund')).toBe('documentNumber')
+    expect(counterKeyForDocumentType('invoice')).toBe('invoiceNumber')
+    expect(counterKeyForDocumentType('demand')).toBe('demandNumber')
+  })
+})
+
+describe('isDeletableDocumentType', () => {
+  it('allows only invoice and demand', () => {
+    expect(isDeletableDocumentType('invoice')).toBe(true)
+    expect(isDeletableDocumentType('demand')).toBe(true)
+    expect(isDeletableDocumentType('receipt')).toBe(false)
+    expect(isDeletableDocumentType('cancellation')).toBe(false)
+    expect(isDeletableDocumentType('refund')).toBe(false)
+  })
+})
+
+describe('amountToHebrewWords', () => {
+  it('spells whole shekels', () => {
+    expect(amountToHebrewWords(0)).toBe('אפס שקלים חדשים')
+    expect(amountToHebrewWords(1)).toBe('שקל חדש אחד')
+    expect(amountToHebrewWords(5)).toBe('חמישה שקלים חדשים')
+    expect(amountToHebrewWords(10)).toBe('עשרה שקלים חדשים')
+    expect(amountToHebrewWords(15)).toBe('חמישה עשר שקלים חדשים')
+    expect(amountToHebrewWords(20)).toBe('עשרים שקלים חדשים')
+    expect(amountToHebrewWords(21)).toBe('עשרים ואחד שקלים חדשים')
+  })
+
+  it('spells hundreds and thousands', () => {
+    expect(amountToHebrewWords(100)).toBe('מאה שקלים חדשים')
+    expect(amountToHebrewWords(120)).toBe('מאה ועשרים שקלים חדשים')
+    expect(amountToHebrewWords(125)).toBe('מאה עשרים וחמישה שקלים חדשים')
+    expect(amountToHebrewWords(1000)).toBe('אלף שקלים חדשים')
+    expect(amountToHebrewWords(1200)).toBe('אלף ומאתיים שקלים חדשים')
+    expect(amountToHebrewWords(25000)).toBe('עשרים וחמישה אלף שקלים חדשים')
+  })
+
+  it('appends agorot in NN/100 form', () => {
+    expect(amountToHebrewWords(1200.5)).toBe('אלף ומאתיים שקלים חדשים ו־50/100')
+    expect(amountToHebrewWords(1.9)).toBe('שקל חדש אחד ו־90/100')
+  })
+
+  it('returns empty for amounts out of range', () => {
+    expect(amountToHebrewWords(1_000_000)).toBe('')
   })
 })
 

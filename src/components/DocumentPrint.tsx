@@ -1,12 +1,16 @@
 import { format, parseISO } from 'date-fns'
 import { formatILSExact } from '../lib/money/calculations'
 import {
+  amountToHebrewWords,
   documentTypeLabel,
   formatDocumentNumber,
   PAYMENT_BEARING_TYPES,
   paymentMethodLabel,
 } from '../lib/documents'
 import type { DocumentPayment, FinancialDocument } from '../types'
+
+/** Logo shown on printed documents; hidden gracefully if the asset is missing. */
+const LOGO_SRC = '/brand/logo-on-white.png'
 
 function formatDate(iso: string): string {
   return format(parseISO(iso), 'dd/MM/yyyy')
@@ -17,6 +21,7 @@ function paymentDetail(payment: DocumentPayment): string {
   if (payment.method === 'check') {
     if (payment.bank) parts.push(`בנק ${payment.bank}`)
     if (payment.branch) parts.push(`סניף ${payment.branch}`)
+    if (payment.accountNumber) parts.push(`חשבון ${payment.accountNumber}`)
     if (payment.checkNumber) parts.push(`המחאה ${payment.checkNumber}`)
     if (payment.dueDate) parts.push(`פירעון ${formatDate(payment.dueDate)}`)
   }
@@ -25,11 +30,20 @@ function paymentDetail(payment: DocumentPayment): string {
   return parts.join(' · ')
 }
 
-export function DocumentPrint({ document: doc }: { document: FinancialDocument }) {
+export function DocumentPrint({
+  document: doc,
+  copyLabel = 'מקור',
+}: {
+  document: FinancialDocument
+  /** "מקור" for the original print, "העתק — נאמן למקור" for reprints. */
+  copyLabel?: string
+}) {
   const { business } = doc
   const showLineItems = doc.lineItems.length > 0
   const showPayments =
     PAYMENT_BEARING_TYPES.includes(doc.type) && (doc.payments?.length ?? 0) > 0
+  const totalInWords =
+    PAYMENT_BEARING_TYPES.includes(doc.type) ? amountToHebrewWords(doc.total) : ''
 
   return (
     <article className="doc-print" dir="rtl">
@@ -37,6 +51,14 @@ export function DocumentPrint({ document: doc }: { document: FinancialDocument }
 
       <header className="doc-print__head">
         <div className="doc-print__business">
+          <img
+            className="doc-print__logo"
+            src={LOGO_SRC}
+            alt=""
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
           <h1>{business.legalName}</h1>
           <p>עוסק פטור · מס׳ עוסק/ת״ז: {business.taxId}</p>
           {business.address && <p>{business.address}</p>}
@@ -46,7 +68,7 @@ export function DocumentPrint({ document: doc }: { document: FinancialDocument }
         </div>
         <div className="doc-print__title">
           <span className="doc-print__type">{documentTypeLabel(doc.type)}</span>
-          <span className="doc-print__origin">מקור</span>
+          <span className="doc-print__origin">{copyLabel}</span>
           <span className="doc-print__number">
             מס׳ {formatDocumentNumber(doc.type, doc.number)}
           </span>
@@ -96,6 +118,7 @@ export function DocumentPrint({ document: doc }: { document: FinancialDocument }
         <span>סה״כ</span>
         <strong>{formatILSExact(doc.total)}</strong>
       </div>
+      {totalInWords && <p className="doc-print__words">במילים: {totalInWords}</p>}
 
       {showPayments && (
         <section className="doc-print__payments">

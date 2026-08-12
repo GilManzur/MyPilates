@@ -5,6 +5,7 @@ import { Field, TextInput, TextSelect } from '../components/Field'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { Overlay } from '../components/Overlay'
+import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { currentYearMonth, formatILS } from '../lib/money/calculations'
@@ -34,6 +35,7 @@ export function CalendarPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
 
   const weeklyCount = useMemo(() => {
     if (!form.weekly || !form.date || !form.startTime || !form.endTime || !form.untilDate) return 0
@@ -188,10 +190,13 @@ export function CalendarPage() {
       )}
 
       {open && (
-        <Overlay>
+        <Overlay onClose={() => setOpen(false)}>
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
             className="sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingId ? 'עריכת שיעור' : 'שיעור חדש'}
             onClick={(e) => e.stopPropagation()}
             onSubmit={(e) => void onSubmit(e)}
           >
@@ -337,10 +342,17 @@ export function CalendarPage() {
                   label="מחק"
                   icon="trash"
                   variant="danger"
-                  onClick={() => {
-                    void removeLesson(editingLesson.id)
-                    setOpen(false)
-                  }}
+                  onClick={() =>
+                    setConfirm({
+                      title: 'למחוק את השיעור?',
+                      message: 'השיעור יימחק. שעות שכבר אושרו עבורו יוסרו גם הן.',
+                      confirmLabel: 'מחקי שיעור',
+                      onConfirm: () => {
+                        void removeLesson(editingLesson.id)
+                        setOpen(false)
+                      },
+                    })
+                  }
                 />
               )}
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
@@ -358,6 +370,8 @@ export function CalendarPage() {
         </div>
         </Overlay>
       )}
+
+      <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
     </div>
   )
 }

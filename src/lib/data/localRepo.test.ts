@@ -47,25 +47,22 @@ describe('local document numbering', () => {
     localStorage.clear()
   })
 
-  it('uses a shared legal counter for receipt and invoice', async () => {
-    const repo = createLocalRepository()
-    const a = await repo.issueDocument(uid, draft())
-    const b = await repo.issueDocument(uid, draft({ type: 'invoice' }))
-    expect([a.number, b.number]).toEqual([1, 2])
-  })
-
-  it('numbers demands on a separate counter', async () => {
+  it('keeps receipt, invoice, and demand on separate counters', async () => {
     const repo = createLocalRepository()
     const receipt = await repo.issueDocument(uid, draft())
     const demand = await repo.issueDocument(uid, draft({ type: 'demand' }))
     const invoice = await repo.issueDocument(uid, draft({ type: 'invoice' }))
+    const receipt2 = await repo.issueDocument(uid, draft())
+    const invoice2 = await repo.issueDocument(uid, draft({ type: 'invoice' }))
     const demand2 = await repo.issueDocument(uid, draft({ type: 'demand' }))
     expect(receipt.number).toBe(1)
     expect(demand.number).toBe(1)
-    expect(invoice.number).toBe(2)
+    expect(invoice.number).toBe(1)
+    expect(receipt2.number).toBe(2)
+    expect(invoice2.number).toBe(2)
     expect(demand2.number).toBe(2)
     const counters = await repo.getDocumentCounters(uid)
-    expect(counters).toEqual({ documentNumber: 2, demandNumber: 2 })
+    expect(counters).toEqual({ documentNumber: 2, invoiceNumber: 2, demandNumber: 2 })
   })
 
   it('lists documents newest-number first', async () => {
@@ -82,10 +79,21 @@ describe('local document numbering', () => {
     const cancellation = await repo.cancelDocument(
       uid,
       original.id,
-      draft({ type: 'cancellation', relatedNumber: original.number, total: 0, lineItems: [] }),
+      draft({
+        type: 'cancellation',
+        relatedNumber: original.number,
+        total: -original.total,
+        lineItems: original.lineItems.map((item) => ({
+          ...item,
+          unitPrice: -item.unitPrice,
+          amount: -item.amount,
+        })),
+      }),
     )
 
     expect(cancellation.number).toBe(2)
+    expect(cancellation.total).toBe(-100)
+    expect(cancellation.lineItems[0]?.amount).toBe(-100)
     const list = await repo.listDocuments(uid)
     expect(list).toHaveLength(2)
     const stored = list.find((d) => d.id === original.id)
@@ -110,6 +118,31 @@ describe('local document numbering', () => {
     expect(issued.number).toBe(100)
     const demand = await repo.issueDocument(uid, draft({ type: 'demand' }))
     expect(demand.number).toBe(1)
+    const invoice = await repo.issueDocument(uid, draft({ type: 'invoice' }))
+    expect(invoice.number).toBe(1)
+  })
+
+  it('setNextDocumentNumber can seed invoices without affecting receipts', async () => {
+    const repo = createLocalRepository()
+    await repo.setNextDocumentNumber(uid, 50, 'invoiceNumber')
+    const invoice = await repo.issueDocument(uid, draft({ type: 'invoice' }))
+    const receipt = await repo.issueDocument(uid, draft())
+    expect(invoice.number).toBe(50)
+    expect(receipt.number).toBe(1)
+  })
+
+  it('deletes invoice and demand but rejects deleting a receipt', async () => {
+    const repo = createLocalRepository()
+    const receipt = await repo.issueDocument(uid, draft())
+    const invoice = await repo.issueDocument(uid, draft({ type: 'invoice' }))
+    const demand = await repo.issueDocument(uid, draft({ type: 'demand' }))
+
+    await repo.deleteDocument(uid, invoice.id)
+    await repo.deleteDocument(uid, demand.id)
+    await expect(repo.deleteDocument(uid, receipt.id)).rejects.toThrow()
+
+    const list = await repo.listDocuments(uid)
+    expect(list.map((d) => d.id)).toEqual([receipt.id])
   })
 
   it('rejects setNextDocumentNumber that would go backwards', async () => {

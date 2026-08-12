@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
+import { Icon } from '../components/Icon'
 import { Field, TextArea, TextInput, TextSelect } from '../components/Field'
 import { DocumentPrint } from '../components/DocumentPrint'
 import { Overlay } from '../components/Overlay'
+import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
+import { elementToPdfBlob, shareDocumentPdf } from '../lib/share/documentPdf'
 import { useDocuments } from '../hooks/useDocuments'
 import { useProfile } from '../hooks/useProfile'
 import { useStudios } from '../hooks/useStudios'
@@ -12,6 +15,7 @@ import type { DocumentDraft } from '../lib/data/types'
 import {
   documentTypeLabel,
   formatDocumentNumber,
+  isDeletableDocumentType,
   lineItemsTotal,
   paymentMethodLabel,
   PAYMENT_BEARING_TYPES,
@@ -38,10 +42,13 @@ const emptyForm = {
   recipientName: '',
   recipientTaxId: '',
   recipientAddress: '',
+  recipientPhone: '',
   studioId: '',
   items: [emptyItem()],
   method: 'transfer' as PaymentMethod,
   bank: '',
+  branch: '',
+  accountNumber: '',
   checkNumber: '',
   dueDate: '',
   cardType: '',
@@ -50,7 +57,7 @@ const emptyForm = {
 }
 
 export function DocumentsPage() {
-  const { documents, loading, issue, cancel } = useDocuments()
+  const { documents, loading, issue, cancel, remove } = useDocuments()
   const { business } = useProfile()
   const { studios } = useStudios()
   const [open, setOpen] = useState(false)
@@ -58,8 +65,58 @@ export function DocumentsPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [viewerId, setViewerId] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
 
   const viewed = viewerId ? documents.find((doc) => doc.id === viewerId) ?? null : null
+  const [copyMode, setCopyMode] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [shareNote, setShareNote] = useState('')
+
+  // Every freshly-opened document prints as the original ("מקור") first.
+  useEffect(() => {
+    setCopyMode(false)
+    setShareNote('')
+  }, [viewerId])
+
+  const printWith = (copy: boolean) => {
+    setCopyMode(copy)
+    // Let React paint the correct מקור/העתק label before the print dialog opens.
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
+  }
+
+  const onShareWhatsApp = async () => {
+    const node = document
+      .getElementById('print-root')
+      ?.querySelector('.doc-print') as HTMLElement | null
+    if (!node || !viewed) return
+    setSharing(true)
+    setShareNote('')
+    // Force the full page-width layout so the receipt is never clipped in the PDF.
+    node.classList.add('doc-print--capture')
+    try {
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      )
+      const blob = await elementToPdfBlob(node)
+      const number = formatDocumentNumber(viewed.type, viewed.number)
+      const label = documentTypeLabel(viewed.type)
+      const outcome = await shareDocumentPdf({
+        blob,
+        fileName: `${label}-${number}.pdf`,
+        title: `${label} ${number}`,
+        text: `${label} מס׳ ${number} מאת ${viewed.business.legalName} · סה״כ ${formatILSExact(viewed.total)}`,
+        phone: viewed.recipient.phone,
+      })
+      if (outcome === 'fallback') {
+        setShareNote('הדפדפן לא תומך בשיתוף קבצים — הקובץ ירד למכשיר ונפתחה שיחת וואטסאפ.')
+      }
+    } catch {
+      setShareNote('אירעה שגיאה בהכנת הקובץ. נסי שוב.')
+    } finally {
+      node.classList.remove('doc-print--capture')
+      setSharing(false)
+    }
+  }
 
   const computedItems = useMemo<DocumentLineItem[]>(
     () =>
@@ -99,6 +156,8 @@ export function DocumentsPage() {
     const payment: DocumentPayment = { method: form.method, amount: total }
     if (form.method === 'check') {
       if (form.bank.trim()) payment.bank = form.bank.trim()
+      if (form.branch.trim()) payment.branch = form.branch.trim()
+      if (form.accountNumber.trim()) payment.accountNumber = form.accountNumber.trim()
       if (form.checkNumber.trim()) payment.checkNumber = form.checkNumber.trim()
       if (form.dueDate) payment.dueDate = form.dueDate
     } else if (form.method === 'credit') {
@@ -127,6 +186,7 @@ export function DocumentsPage() {
     const recipient: FinancialDocument['recipient'] = { name: form.recipientName.trim() }
     if (form.recipientTaxId.trim()) recipient.taxId = form.recipientTaxId.trim()
     if (form.recipientAddress.trim()) recipient.address = form.recipientAddress.trim()
+    if (form.recipientPhone.trim()) recipient.phone = form.recipientPhone.trim()
     if (form.studioId) recipient.studioId = form.studioId
 
     const draft: DocumentDraft = {
@@ -151,45 +211,82 @@ export function DocumentsPage() {
     }
   }
 
-  const onCancelDocument = async (doc: FinancialDocument) => {
-    if (!business) return
+  const onCancelDocument = (doc: FinancialDocument) => {
+    if (!business || doc.type !== 'receipt') return
     const formatted = formatDocumentNumber(doc.type, doc.number)
-    if (!window.confirm(`לבטל ${documentTypeLabel(doc.type)} מס׳ ${formatted}?`)) return
-    const draft: DocumentDraft = {
-      type: 'cancellation',
-      issuedAt: new Date().toISOString(),
-      recipient: doc.recipient,
-      lineItems: [],
-      total: 0,
-      currency: 'ILS',
-      relatedNumber: doc.number,
-      relatedType: doc.type,
-      business,
-      note: `ביטול ${documentTypeLabel(doc.type)} מס׳ ${formatted}`,
-    }
-    const created = await cancel(doc.id, draft)
-    if (created) setViewerId(created.id)
+    setConfirm({
+      title: `לבטל ${documentTypeLabel(doc.type)} מס׳ ${formatted}?`,
+      message: 'תופק תעודת ביטול והמסמך המקורי יסומן כמבוטל. פעולה זו אינה הפיכה.',
+      confirmLabel: 'בטלי מסמך',
+      onConfirm: () => {
+        void (async () => {
+          const draft: DocumentDraft = {
+            type: 'cancellation',
+            issuedAt: new Date().toISOString(),
+            recipient: doc.recipient,
+            lineItems: doc.lineItems.map((item) => ({
+              ...item,
+              unitPrice: -item.unitPrice,
+              amount: -item.amount,
+            })),
+            total: -doc.total,
+            currency: 'ILS',
+            relatedNumber: doc.number,
+            relatedType: doc.type,
+            business,
+            note: `ביטול ${documentTypeLabel(doc.type)} מס׳ ${formatted}`,
+          }
+          const created = await cancel(doc.id, draft)
+          if (created) setViewerId(created.id)
+        })()
+      },
+    })
   }
 
-  const onRefundDocument = async (doc: FinancialDocument) => {
+  const onDeleteDocument = (doc: FinancialDocument) => {
+    if (!isDeletableDocumentType(doc.type)) return
+    const formatted = formatDocumentNumber(doc.type, doc.number)
+    setConfirm({
+      title: `למחוק ${documentTypeLabel(doc.type)} מס׳ ${formatted}?`,
+      message: 'המסמך יימחק לצמיתות.',
+      confirmLabel: 'מחקי',
+      onConfirm: () => {
+        void (async () => {
+          await remove(doc.id)
+          if (viewerId === doc.id) setViewerId(null)
+        })()
+      },
+    })
+  }
+
+  const onRefundDocument = (doc: FinancialDocument) => {
     if (!business) return
     const formatted = formatDocumentNumber(doc.type, doc.number)
-    if (!window.confirm(`להפיק קבלה על החזר כספי בגין מס׳ ${formatted}?`)) return
-    const draft: DocumentDraft = {
-      type: 'refund',
-      issuedAt: new Date().toISOString(),
-      recipient: doc.recipient,
-      lineItems: doc.lineItems,
-      total: doc.total,
-      currency: 'ILS',
-      relatedNumber: doc.number,
-      relatedType: doc.type,
-      payments: [{ method: 'transfer', amount: doc.total }],
-      business,
-      note: `החזר כספי בגין קבלה מס׳ ${formatted}`,
-    }
-    const created = await cancel(doc.id, draft)
-    if (created) setViewerId(created.id)
+    setConfirm({
+      title: `להפיק קבלה על החזר כספי בגין מס׳ ${formatted}?`,
+      message: 'תופק קבלה חדשה על החזר כספי המפנה לקבלה המקורית.',
+      confirmLabel: 'הפיקי החזר',
+      danger: false,
+      onConfirm: () => {
+        void (async () => {
+          const draft: DocumentDraft = {
+            type: 'refund',
+            issuedAt: new Date().toISOString(),
+            recipient: doc.recipient,
+            lineItems: doc.lineItems,
+            total: doc.total,
+            currency: 'ILS',
+            relatedNumber: doc.number,
+            relatedType: doc.type,
+            payments: [{ method: 'transfer', amount: doc.total }],
+            business,
+            note: `החזר כספי בגין קבלה מס׳ ${formatted}`,
+          }
+          const created = await cancel(doc.id, draft)
+          if (created) setViewerId(created.id)
+        })()
+      },
+    })
   }
 
   return (
@@ -220,8 +317,9 @@ export function DocumentsPage() {
         ) : (
           <ul className="list">
             {documents.map((doc) => {
-              const canCancel = doc.status === 'issued' && doc.type !== 'cancellation'
+              const canCancel = doc.status === 'issued' && doc.type === 'receipt'
               const canRefund = doc.status === 'issued' && doc.type === 'receipt'
+              const canDelete = isDeletableDocumentType(doc.type)
               return (
                 <li key={doc.id} className="list-item list-item--action">
                   <div className="list-item__main">
@@ -258,6 +356,14 @@ export function DocumentsPage() {
                         onClick={() => void onCancelDocument(doc)}
                       />
                     )}
+                    {canDelete && (
+                      <IconButton
+                        label="מחיקה"
+                        icon="trash"
+                        variant="danger"
+                        onClick={() => void onDeleteDocument(doc)}
+                      />
+                    )}
                   </div>
                 </li>
               )
@@ -267,10 +373,13 @@ export function DocumentsPage() {
       </section>
 
       {open && (
-        <Overlay>
+        <Overlay onClose={() => setOpen(false)}>
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
             className="sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="מסמך חדש"
             onClick={(e) => e.stopPropagation()}
             onSubmit={(e) => void onSubmit(e)}
           >
@@ -333,6 +442,15 @@ export function DocumentsPage() {
                 />
               </Field>
             </div>
+            <Field label="טלפון (לשליחת הקבלה בוואטסאפ, אופציונלי)">
+              <TextInput
+                type="tel"
+                inputMode="tel"
+                placeholder="05X-XXXXXXX"
+                value={form.recipientPhone}
+                onChange={(e) => setField('recipientPhone', e.target.value)}
+              />
+            </Field>
 
             <p className="field__label">שורות</p>
             {form.items.map((item, index) => (
@@ -406,6 +524,18 @@ export function DocumentsPage() {
                     <Field label="בנק">
                       <TextInput value={form.bank} onChange={(e) => setField('bank', e.target.value)} />
                     </Field>
+                    <Field label="סניף">
+                      <TextInput
+                        value={form.branch}
+                        onChange={(e) => setField('branch', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="מס׳ חשבון">
+                      <TextInput
+                        value={form.accountNumber}
+                        onChange={(e) => setField('accountNumber', e.target.value)}
+                      />
+                    </Field>
                     <Field label="מס׳ המחאה">
                       <TextInput
                         value={form.checkNumber}
@@ -458,20 +588,47 @@ export function DocumentsPage() {
       )}
 
       {viewed && (
-        <Overlay>
-        <div className="doc-viewer" onClick={() => setViewerId(null)}>
+        <Overlay onClose={() => setViewerId(null)}>
+        <div
+          className="doc-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="תצוגת מסמך"
+          onClick={() => setViewerId(null)}
+        >
           <div className="doc-viewer__bar" onClick={(e) => e.stopPropagation()}>
             <Button variant="secondary" onClick={() => setViewerId(null)}>
               סגירה
             </Button>
-            <Button onClick={() => window.print()}>הדפסה / שמירה כ‑PDF</Button>
+            <Button variant="secondary" onClick={() => printWith(true)}>
+              הדפסת עותק
+            </Button>
+            <Button onClick={() => printWith(false)}>הדפסה / שמירה כ‑PDF</Button>
+            <Button
+              className="btn--whatsapp"
+              onClick={() => void onShareWhatsApp()}
+              disabled={sharing}
+            >
+              <Icon name="whatsapp" />
+              {sharing ? 'מכין…' : 'שליחה בוואטסאפ'}
+            </Button>
           </div>
+          {shareNote && (
+            <p className="doc-viewer__note" onClick={(e) => e.stopPropagation()}>
+              {shareNote}
+            </p>
+          )}
           <div id="print-root" onClick={(e) => e.stopPropagation()}>
-            <DocumentPrint document={viewed} />
+            <DocumentPrint
+              document={viewed}
+              copyLabel={copyMode ? 'העתק — נאמן למקור' : 'מקור'}
+            />
           </div>
         </div>
         </Overlay>
       )}
+
+      <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
     </div>
   )
 }

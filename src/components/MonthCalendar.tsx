@@ -8,6 +8,8 @@ import {
   weekDateKeys,
   WEEKDAY_LABELS_HE,
 } from '../lib/dates'
+import { eventInk } from '../lib/colors'
+import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import type { Lesson, Studio } from '../types'
 
 type Props = {
@@ -57,9 +59,9 @@ export function MonthCalendar({
 
   return (
     <div className={`month-calendar panel${pickingDay ? ' is-picking-day' : ''}`}>
-      <div className="month-calendar__weekdays" aria-hidden="true">
+      <div className="month-calendar__weekdays" role="row">
         {WEEKDAY_LABELS_HE.map((label) => (
-          <span key={label} className="month-calendar__weekday">
+          <span key={label} className="month-calendar__weekday" role="columnheader">
             {label}
           </span>
         ))}
@@ -93,7 +95,7 @@ export function MonthCalendar({
               </button>
               <div className="month-calendar__events">
                 {visibleLessons.map((lesson) => {
-                  const color = studioMap[lesson.studioId]?.color ?? '#5B7C6A'
+                  const color = studioMap[lesson.studioId]?.color ?? DEFAULT_STUDIO_COLOR
                   const name = studioName(lesson.studioId)
                   return (
                     <button
@@ -103,7 +105,7 @@ export function MonthCalendar({
                       style={{
                         background: `${color}22`,
                         borderColor: color,
-                        color,
+                        color: eventInk(color),
                       }}
                       onClick={() => onLessonClick(lesson)}
                       title={`${formatLessonClock(lesson.startAt)} ${name}`}

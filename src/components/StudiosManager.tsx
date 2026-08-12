@@ -3,6 +3,7 @@ import { Button } from './Button'
 import { IconButton } from './IconButton'
 import { Field, TextInput } from './Field'
 import { Overlay } from './Overlay'
+import { ConfirmSheet, type ConfirmRequest } from './ConfirmSheet'
 import { useStudios } from '../hooks/useStudios'
 import { STUDIO_COLORS } from '../lib/data/types'
 import { formatILS } from '../lib/money/calculations'
@@ -19,6 +20,15 @@ export function StudiosManager() {
   const [travelPay, setTravelPay] = useState('')
   const [swapEnabled, setSwapEnabled] = useState(false)
   const [swapPay, setSwapPay] = useState('')
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+
+  const confirmRemove = (studio: Studio) =>
+    setConfirm({
+      title: `למחוק את "${studio.name}"?`,
+      message: 'הסטודיו יוסר לצמיתות. שיעורים ושעות שכבר תועדו יישמרו אך יאבדו את השיוך לסטודיו.',
+      confirmLabel: 'מחקי סטודיו',
+      onConfirm: () => void removeStudio(studio.id),
+    })
 
   const openCreate = () => {
     setEditing(null)
@@ -102,7 +112,7 @@ export function StudiosManager() {
                   label="מחק"
                   icon="trash"
                   variant="danger"
-                  onClick={() => void removeStudio(studio.id)}
+                  onClick={() => confirmRemove(studio)}
                 />
               </div>
             </li>
@@ -111,10 +121,13 @@ export function StudiosManager() {
       )}
 
       {open && (
-        <Overlay>
+        <Overlay onClose={() => setOpen(false)}>
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <form
             className="sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={editing ? 'עריכת סטודיו' : 'סטודיו חדש'}
             onClick={(e) => e.stopPropagation()}
             onSubmit={(e) => void onSubmit(e)}
           >
@@ -214,6 +227,8 @@ export function StudiosManager() {
         </div>
         </Overlay>
       )}
+
+      <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
     </section>
   )
 }

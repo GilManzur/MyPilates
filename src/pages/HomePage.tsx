@@ -13,13 +13,15 @@ import {
   totalAmount,
 } from '../lib/money/calculations'
 import { formatLessonTime } from '../lib/dates'
+import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 
 export function HomePage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
-  const { studios } = useStudios()
-  const { lessons } = useLessons(yearMonth)
-  const { entries } = useHourEntries(yearMonth)
-  const { payments } = usePayments(yearMonth)
+  const { studios, loading: studiosLoading } = useStudios()
+  const { lessons, loading: lessonsLoading } = useLessons(yearMonth)
+  const { entries, loading: entriesLoading } = useHourEntries(yearMonth)
+  const { payments, loading: paymentsLoading } = usePayments(yearMonth)
+  const loading = studiosLoading || lessonsLoading || entriesLoading || paymentsLoading
 
   const summaries = useMemo(
     () => buildMonthSummaries(studios, entries, payments, yearMonth),
@@ -58,7 +60,9 @@ export function HomePage() {
           <h2>שיעורים קרובים</h2>
           <Link to="/calendar">לכל היומן</Link>
         </div>
-        {upcoming.length === 0 ? (
+        {loading ? (
+          <p className="empty">טוען…</p>
+        ) : upcoming.length === 0 ? (
           <p className="empty">אין שיעורים קרובים החודש. הוסיפי ביומן.</p>
         ) : (
           <ul className="list">
@@ -66,7 +70,7 @@ export function HomePage() {
               <li key={lesson.id} className="list-item">
                 <span
                   className="color-dot"
-                  style={{ background: studioById(lesson.studioId)?.color ?? '#5B7C6A' }}
+                  style={{ background: studioById(lesson.studioId)?.color ?? DEFAULT_STUDIO_COLOR }}
                 />
                 <div className="list-item__body">
                   <p className="list-item__title">{studioName(lesson.studioId)}</p>
@@ -85,7 +89,9 @@ export function HomePage() {
           <h2>לפי סטודיו</h2>
           <Link to="/payments">תשלומים</Link>
         </div>
-        {summaries.length === 0 ? (
+        {loading ? (
+          <p className="empty">טוען…</p>
+        ) : summaries.length === 0 ? (
           <p className="empty">
             {studios.length === 0
               ? 'הוסיפי סטודיו בהגדרות כדי להתחיל לעקוב אחרי השכר.'
@@ -97,7 +103,7 @@ export function HomePage() {
               <li key={summary.studioId} className="list-item">
                 <span
                   className="color-dot"
-                  style={{ background: studioById(summary.studioId)?.color ?? '#5B7C6A' }}
+                  style={{ background: studioById(summary.studioId)?.color ?? DEFAULT_STUDIO_COLOR }}
                 />
                 <div className="list-item__body">
                   <p className="list-item__title">{summary.studioName}</p>

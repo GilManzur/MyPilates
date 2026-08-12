@@ -93,9 +93,10 @@ export interface DocumentLineItem {
 export interface DocumentPayment {
   method: PaymentMethod
   amount: number
-  /** המחאה: bank, branch, check number, due date */
+  /** המחאה: bank, branch, account number, check number, due date */
   bank?: string
   branch?: string
+  accountNumber?: string
   checkNumber?: string
   dueDate?: string
   /** אשראי: card type; העברה/Bit/PayPal: free reference */
@@ -107,14 +108,15 @@ export interface FinancialDocument {
   /** Internal id (createId). */
   id: string
   /**
-   * Sequential running number — legal docs share one counter; demands use a separate
-   * counter. Assigned atomically. Display via `formatDocumentNumber`.
+   * Sequential running number within the document's sequence:
+   * receipts/cancellations/refunds, invoices, and demands each have their own counter.
+   * Assigned atomically. Display via `formatDocumentNumber`.
    */
   number: number
   type: DocumentType
   status: DocumentStatus
   issuedAt: string
-  recipient: { name: string; taxId?: string; address?: string; studioId?: string }
+  recipient: { name: string; taxId?: string; address?: string; phone?: string; studioId?: string }
   lineItems: DocumentLineItem[]
   total: number
   currency: 'ILS'

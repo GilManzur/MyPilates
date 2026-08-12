@@ -6,8 +6,15 @@ import type {
   Studio,
   UserProfile,
 } from '../../types'
-import type { DataRepository } from './types'
+import { counterKeyForDocumentType, isDeletableDocumentType } from '../documents'
+import type { DataRepository, SeedableDocumentCounter } from './types'
 import { createId } from './types'
+
+type LocalCounters = {
+  documentNumber: number
+  invoiceNumber?: number
+  demandNumber?: number
+}
 
 interface LocalStore {
   profiles: Record<string, UserProfile>
@@ -16,7 +23,7 @@ interface LocalStore {
   hours: Record<string, HourEntry[]>
   payments: Record<string, Payment[]>
   documents: Record<string, FinancialDocument[]>
-  counters: Record<string, { documentNumber: number; demandNumber?: number }>
+  counters: Record<string, LocalCounters>
   auth: { uid: string; email: string; password: string; displayName: string } | null
 }
 
@@ -154,10 +161,8 @@ export function createLocalRepository(): DataRepository {
     async issueDocument(uid, draft) {
       const store = readStore()
       const counters = store.counters[uid] ?? { documentNumber: 0 }
-      const isDemand = draft.type === 'demand'
-      const number = isDemand
-        ? (counters.demandNumber ?? 0) + 1
-        : (counters.documentNumber ?? 0) + 1
+      const key = counterKeyForDocumentType(draft.type)
+      const number = (counters[key] ?? 0) + 1
       const full: FinancialDocument = {
         ...draft,
         id: createId('doc'),
@@ -165,9 +170,12 @@ export function createLocalRepository(): DataRepository {
         status: 'issued',
         createdAt: new Date().toISOString(),
       }
-      store.counters[uid] = isDemand
-        ? { documentNumber: counters.documentNumber ?? 0, demandNumber: number }
-        : { documentNumber: number, demandNumber: counters.demandNumber }
+      store.counters[uid] = {
+        documentNumber: counters.documentNumber ?? 0,
+        invoiceNumber: counters.invoiceNumber,
+        demandNumber: counters.demandNumber,
+        [key]: number,
+      }
       store.documents[uid] = [...(store.documents[uid] ?? []), full]
       writeStore(store)
       return full
@@ -185,6 +193,7 @@ export function createLocalRepository(): DataRepository {
       }
       store.counters[uid] = {
         documentNumber: number,
+        invoiceNumber: counters.invoiceNumber,
         demandNumber: counters.demandNumber,
       }
       const existing = (store.documents[uid] ?? []).map((item) =>
@@ -194,26 +203,40 @@ export function createLocalRepository(): DataRepository {
       writeStore(store)
       return full
     },
+    async deleteDocument(uid, documentId) {
+      const store = readStore()
+      const existing = store.documents[uid] ?? []
+      const target = existing.find((item) => item.id === documentId)
+      if (!target) throw new Error('המסמך לא נמצא')
+      if (!isDeletableDocumentType(target.type)) {
+        throw new Error('ניתן למחוק רק חשבונית עסקה או דרישת תשלום')
+      }
+      store.documents[uid] = existing.filter((item) => item.id !== documentId)
+      writeStore(store)
+    },
     async getDocumentCounters(uid) {
       const counters = readStore().counters[uid]
       return {
         documentNumber: counters?.documentNumber ?? 0,
+        invoiceNumber: counters?.invoiceNumber ?? 0,
         demandNumber: counters?.demandNumber ?? 0,
       }
     },
-    async setNextDocumentNumber(uid, next) {
+    async setNextDocumentNumber(uid, next, counter: SeedableDocumentCounter = 'documentNumber') {
       if (!Number.isInteger(next) || next < 1) {
         throw new Error('מספר המסמך הבא חייב להיות מספר שלם חיובי')
       }
       const store = readStore()
       const counters = store.counters[uid] ?? { documentNumber: 0 }
-      const current = counters.documentNumber ?? 0
+      const current = counters[counter] ?? 0
       if (next < current + 1) {
         throw new Error(`לא ניתן לרדת מתחת למספר ${current + 1}`)
       }
       store.counters[uid] = {
-        documentNumber: next - 1,
+        documentNumber: counters.documentNumber ?? 0,
+        invoiceNumber: counters.invoiceNumber,
         demandNumber: counters.demandNumber,
+        [counter]: next - 1,
       }
       writeStore(store)
     },
