@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
@@ -71,6 +71,7 @@ export function DocumentsPage() {
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [showSequence, setShowSequence] = useState(false)
   const [ledgerMonth, setLedgerMonth] = useState<string | null>(null)
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
   // True only while rasterizing for WhatsApp/PDF, so the delivered copy is
   // stamped "מסמך ממוחשב" (חוזר 24/2004) while the paper print is not.
@@ -129,7 +130,7 @@ export function DocumentsPage() {
           const blob = await elementToPdfBlob(node)
           const number = formatDocumentNumber(target.type, target.number)
           await archiveReceiptPdf(blob, {
-            fileName: `${documentTypeLabel(target.type)}-${number}.pdf`,
+            fileName: `${documentTypeLabel(target.type)} (${number}) - ${target.recipient.name}.pdf`,
             yearMonth: target.issuedAt.slice(0, 7),
             number,
             type: target.type,
@@ -185,7 +186,7 @@ export function DocumentsPage() {
       const label = documentTypeLabel(viewed.type)
       const outcome = await shareDocumentPdf({
         blob,
-        fileName: `${label}-${number}.pdf`,
+        fileName: `${label} (${number}) - ${viewed.recipient.name}.pdf`,
         title: `${label} ${number}`,
         text: `${label} מס׳ ${number} מאת ${viewed.business.legalName} · סה״כ ${formatILSExact(viewed.total)}`,
         phone: viewed.recipient.phone,
@@ -442,60 +443,105 @@ export function DocumentsPage() {
         ) : documents.length === 0 ? (
           <p className="empty">עדיין לא הופקו מסמכים.</p>
         ) : (
-          <ul className="list">
-            {documents.map((doc) => {
-              const canCancel = doc.status === 'issued' && doc.type === 'receipt'
-              const canRefund = doc.status === 'issued' && doc.type === 'receipt'
-              const canVoid = isVoidableDocumentType(doc.type) && doc.status === 'issued'
-              return (
-                <li key={doc.id} className="list-item list-item--action">
-                  <div className="list-item__main">
-                    <span className="list-item__body">
-                      <p className="list-item__title">
-                        {documentTypeLabel(doc.type)} · מס׳{' '}
-                        {formatDocumentNumber(doc.type, doc.number)}
-                      </p>
-                      <p className="list-item__meta">
-                        {doc.recipient.name} · {formatShortDate(doc.issuedAt)} ·{' '}
-                        {formatILSExact(doc.total)}
-                        {doc.status === 'cancelled' ? ' · מבוטל' : ''}
-                      </p>
-                    </span>
-                  </div>
-                  <div className="list-item__actions">
-                    <IconButton
-                      label="צפייה והדפסה"
-                      icon="print"
-                      onClick={() => openViewer(doc.id)}
-                    />
-                    {canRefund && (
-                      <IconButton
-                        label="החזר כספי"
-                        icon="refund"
-                        onClick={() => void onRefundDocument(doc)}
-                      />
-                    )}
-                    {canCancel && (
-                      <IconButton
-                        label="ביטול"
-                        icon="cancel"
-                        variant="danger"
-                        onClick={() => void onCancelDocument(doc)}
-                      />
-                    )}
-                    {canVoid && (
-                      <IconButton
-                        label="ביטול מסמך"
-                        icon="cancel"
-                        variant="danger"
-                        onClick={() => void onVoidDocument(doc)}
-                      />
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+          <div className="doc-table-wrap">
+            <table className="doc-table">
+              <thead>
+                <tr>
+                  <th aria-hidden="true"></th>
+                  <th>מסמך</th>
+                  <th>נמען</th>
+                  <th>סכום</th>
+                  <th aria-hidden="true"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {documents.map((doc) => {
+                  const canCancel = doc.status === 'issued' && doc.type === 'receipt'
+                  const canRefund = doc.status === 'issued' && doc.type === 'receipt'
+                  const canVoid = isVoidableDocumentType(doc.type) && doc.status === 'issued'
+                  const expanded = expandedDocId === doc.id
+                  return (
+                    <Fragment key={doc.id}>
+                      <tr
+                        className="doc-row"
+                        onClick={() => setExpandedDocId(expanded ? null : doc.id)}
+                        aria-expanded={expanded}
+                      >
+                        <td className="doc-row__toggle">
+                          <span className={expanded ? 'open' : ''}>
+                            <Icon name="chevron" size={16} />
+                          </span>
+                        </td>
+                        <td className="doc-row__doc">
+                          <strong>
+                            {documentTypeLabel(doc.type)} {formatDocumentNumber(doc.type, doc.number)}
+                          </strong>
+                          <span className="doc-row__sub">
+                            {formatShortDate(doc.issuedAt)}
+                            {doc.status === 'cancelled' && (
+                              <span className="doc-row__void"> · מבוטל</span>
+                            )}
+                          </span>
+                        </td>
+                        <td>{doc.recipient.name}</td>
+                        <td className="doc-row__amount">{formatILSExact(doc.total)}</td>
+                        <td className="doc-row__actions" onClick={(e) => e.stopPropagation()}>
+                          <span>
+                            <IconButton
+                              label="צפייה והדפסה"
+                              icon="print"
+                              onClick={() => openViewer(doc.id)}
+                            />
+                            {canRefund && (
+                              <IconButton
+                                label="החזר כספי"
+                                icon="refund"
+                                onClick={() => void onRefundDocument(doc)}
+                              />
+                            )}
+                            {canCancel && (
+                              <IconButton
+                                label="ביטול"
+                                icon="cancel"
+                                variant="danger"
+                                onClick={() => void onCancelDocument(doc)}
+                              />
+                            )}
+                            {canVoid && (
+                              <IconButton
+                                label="ביטול מסמך"
+                                icon="cancel"
+                                variant="danger"
+                                onClick={() => void onVoidDocument(doc)}
+                              />
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr className="doc-detail">
+                          <td colSpan={5}>
+                            <div className="doc-detail__list">
+                              {doc.lineItems.map((item, index) => (
+                                <div key={index} className="doc-detail__row">
+                                  <span>{item.description}</span>
+                                  <span>
+                                    {item.quantity} × {formatILSExact(item.unitPrice)}
+                                  </span>
+                                  <span>{formatILSExact(item.amount)}</span>
+                                </div>
+                              ))}
+                              {doc.note && <p className="doc-detail__note">{doc.note}</p>}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

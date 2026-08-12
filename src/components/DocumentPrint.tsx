@@ -35,6 +35,7 @@ export function DocumentPrint({
   copyLabel = 'מקור',
   draft = false,
   computerized = false,
+  producedAt,
 }: {
   document: FinancialDocument
   /** "מקור" for the original print, "העתק — נאמן למקור" for reprints. */
@@ -43,6 +44,8 @@ export function DocumentPrint({
   draft?: boolean
   /** Marks an electronically-delivered copy as a "מסמך ממוחשב" (חוזר 24/2004). */
   computerized?: boolean
+  /** ISO date the output is produced ("הופק ב"); defaults to now. */
+  producedAt?: string
 }) {
   const { business } = doc
   const showLineItems = doc.lineItems.length > 0
@@ -156,6 +159,13 @@ export function DocumentPrint({
 
       <footer className="doc-print__foot">
         <p>עוסק פטור — פטור ממע״מ לפי סעיף 31(3) לחוק מע״מ.</p>
+        {!draft && (
+          <p className="doc-print__produced">
+            הופק ב: {formatDate(producedAt ?? new Date().toISOString())} |{' '}
+            {documentTypeLabel(doc.type)} {formatDocumentNumber(doc.type, doc.number)} · עמוד 1
+            מתוך 1
+          </p>
+        )}
       </footer>
     </article>
   )

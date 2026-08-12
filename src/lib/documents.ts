@@ -61,18 +61,15 @@ export function paymentMethodLabel(method: PaymentMethod): string {
 export const PREFIXED_NUMBER_WIDTH = 4
 
 /**
- * Display form of a document's running number.
- * Demands → `REQ-0001`; invoices → `INV-0001`;
- * receipts/cancellations/refunds stay plain numeric.
+ * Display form of a document's running number, always zero-padded to
+ * {@link PREFIXED_NUMBER_WIDTH}. Demands → `REQ-0001`; invoices → `INV-0001`;
+ * receipts/cancellations/refunds → `0001`.
  */
 export function formatDocumentNumber(type: DocumentType, number: number): string {
-  if (type === 'demand') {
-    return `REQ-${String(number).padStart(PREFIXED_NUMBER_WIDTH, '0')}`
-  }
-  if (type === 'invoice') {
-    return `INV-${String(number).padStart(PREFIXED_NUMBER_WIDTH, '0')}`
-  }
-  return String(number)
+  const padded = String(number).padStart(PREFIXED_NUMBER_WIDTH, '0')
+  if (type === 'demand') return `REQ-${padded}`
+  if (type === 'invoice') return `INV-${padded}`
+  return padded
 }
 
 /** The three running-number sequences, with a display label and a sample type for formatting. */
@@ -87,31 +84,37 @@ export interface SequenceReport {
   label: string
   /** A representative type used to format numbers in this sequence. */
   sampleType: DocumentType
+  /** First number actually issued (the user's chosen start point); 0 if none. */
+  first: number
   /** Last number assigned to the sequence (0 if none). */
   last: number
-  /** How many numbers in [1..last] were actually issued. */
+  /** How many numbers in [first..last] were actually issued. */
   issuedCount: number
-  /** Numbers in [1..last] with no document — a broken sequence (נספח ה׳ א5). */
+  /** Numbers in [first..last] with no document — a broken sequence (נספח ה׳ א5). */
   missing: number[]
 }
 
 /**
- * Checks each running-number sequence for gaps: any number in `[1..last]`
- * without a corresponding document. Implements the נספח ה׳ (א)(5) requirement
- * to state the missing documents explicitly, not merely list what exists.
+ * Checks each running-number sequence for gaps: any number between the first
+ * issued number and the last, with no corresponding document. The range starts
+ * at the first *issued* number (not 1) so a sequence the user deliberately
+ * started at, say, 100 is considered valid. Implements נספח ה׳ (א)(5) — state
+ * the missing documents explicitly, not merely list what exists.
  */
 export function findSequenceGaps(
   documents: Pick<FinancialDocument, 'type' | 'number'>[],
   counters: DocumentCounters,
 ): SequenceReport[] {
   return SEQUENCE_META.map(({ key, label, sampleType }) => {
-    const issued = new Set(
-      documents.filter((d) => counterKeyForDocumentType(d.type) === key).map((d) => d.number),
-    )
+    const numbers = documents
+      .filter((d) => counterKeyForDocumentType(d.type) === key)
+      .map((d) => d.number)
+    const issued = new Set(numbers)
     const last = counters[key]
+    const first = numbers.length > 0 ? Math.min(...numbers) : 0
     const missing: number[] = []
-    for (let n = 1; n <= last; n++) if (!issued.has(n)) missing.push(n)
-    return { key, label, sampleType, last, issuedCount: issued.size, missing }
+    for (let n = first; n >= 1 && n <= last; n++) if (!issued.has(n)) missing.push(n)
+    return { key, label, sampleType, first, last, issuedCount: issued.size, missing }
   })
 }
 

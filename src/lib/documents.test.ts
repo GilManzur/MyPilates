@@ -113,10 +113,10 @@ describe('formatDocumentNumber', () => {
     expect(formatDocumentNumber('invoice', 9999)).toBe('INV-9999')
   })
 
-  it('leaves receipt/cancel/refund numbers as plain digits', () => {
-    expect(formatDocumentNumber('receipt', 1)).toBe('1')
-    expect(formatDocumentNumber('cancellation', 7)).toBe('7')
-    expect(formatDocumentNumber('refund', 12)).toBe('12')
+  it('zero-pads receipt/cancel/refund numbers (no prefix)', () => {
+    expect(formatDocumentNumber('receipt', 1)).toBe('0001')
+    expect(formatDocumentNumber('cancellation', 7)).toBe('0007')
+    expect(formatDocumentNumber('refund', 12)).toBe('0012')
   })
 })
 
@@ -169,6 +169,18 @@ describe('findSequenceGaps', () => {
       { type: 'invoice' as const, number: 2 },
     ]
     expect(findSequenceGaps(docs, counters).every((r) => r.missing.length === 0)).toBe(true)
+  })
+
+  it('treats a user-chosen start point as valid (no gap below the first issued)', () => {
+    // Receipts started at 100: 100 and 102 issued, 101 missing. 1..99 are NOT gaps.
+    const startedLate = { documentNumber: 102, invoiceNumber: 0, demandNumber: 0 }
+    const docs = [
+      { type: 'receipt' as const, number: 100 },
+      { type: 'receipt' as const, number: 102 },
+    ]
+    const [legal] = findSequenceGaps(docs, startedLate)
+    expect(legal.first).toBe(100)
+    expect(legal.missing).toEqual([101])
   })
 })
 

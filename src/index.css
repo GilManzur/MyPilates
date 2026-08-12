@@ -1372,6 +1372,17 @@ h2 {
   color: #6a766f;
 }
 
+.doc-print__foot .doc-print__produced {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px dashed #d3ddd6;
+  padding-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Tighter document layout on small phones. */
 @media (max-width: 480px) {
   .doc-print {
@@ -1444,18 +1455,33 @@ h2 {
   flex: 0 0 auto;
 }
 
+/* Full-screen dimmed container that centers the report card (like .doc-viewer). */
+.report-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(26, 36, 32, 0.55);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+}
+
 .report-sheet {
   position: relative;
   z-index: 61;
   width: 100%;
-  max-width: 720px;
-  margin: calc(12px + env(safe-area-inset-top)) auto
-    calc(16px + env(safe-area-inset-bottom));
+  max-width: 640px;
   background: var(--surface-solid);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 18px;
+  padding: 20px;
   color: var(--ink);
+}
+.report-sheet--wide {
+  max-width: 860px;
 }
 
 .report-sheet__bar {
@@ -1512,6 +1538,102 @@ h2 {
 .seq-pill--ok { background: rgba(91, 124, 106, 0.16); color: #33604a; }
 .seq-pill--bad { background: rgba(155, 77, 77, 0.14); color: var(--danger); }
 .seq-pill--muted { background: var(--line); color: var(--ink-soft); }
+
+/* Documents table with expandable rows. */
+.doc-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.doc-table thead th {
+  text-align: start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.doc-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+.doc-row:hover {
+  background: color-mix(in srgb, var(--brand-2) 8%, transparent);
+}
+.doc-row > td {
+  padding: 10px;
+  vertical-align: middle;
+}
+.doc-row__toggle {
+  width: 34px;
+  color: var(--ink-soft);
+}
+.doc-row__toggle span {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+.doc-row__toggle span.open {
+  transform: rotate(180deg);
+}
+.doc-row__doc strong {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.doc-row__sub {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.doc-row__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.doc-row__void {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 12px;
+}
+.doc-row__actions {
+  white-space: nowrap;
+  text-align: end;
+}
+.doc-row__actions > * {
+  display: inline-flex;
+  gap: 4px;
+}
+.doc-detail > td {
+  padding: 0 10px 12px 44px;
+  background: color-mix(in srgb, var(--brand-2) 5%, transparent);
+}
+.doc-detail__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+.doc-detail__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.doc-detail__row:last-child {
+  border-bottom: 0;
+}
+.doc-detail__note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
 
 /* Monthly ledger — printable output, styled like the document print. */
 .doc-ledger {

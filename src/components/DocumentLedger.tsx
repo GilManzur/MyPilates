@@ -36,7 +36,14 @@ export function DocumentLedger({
   const producedAt = formatShortDate(new Date().toISOString())
 
   return (
-    <div className="report-sheet" role="dialog" aria-modal="true" aria-label="ריכוז חודשי">
+    <div className="report-scrim" onClick={onClose}>
+      <div
+        className="report-sheet report-sheet--wide"
+        role="dialog"
+        aria-modal="true"
+        aria-label="ריכוז חודשי"
+        onClick={(e) => e.stopPropagation()}
+      >
       <div className="report-sheet__bar">
         <MonthSwitcher yearMonth={yearMonth} onChange={onYearMonthChange} />
         <div className="report-sheet__bar-actions">
@@ -105,6 +112,7 @@ export function DocumentLedger({
             </>
           )}
         </article>
+      </div>
       </div>
     </div>
   )

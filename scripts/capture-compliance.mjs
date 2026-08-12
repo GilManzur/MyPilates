@@ -98,7 +98,7 @@ const shots = [
     gap: 'לפני: "מקור" ניתן להדפסה אינסוף פעמים.',
     after: 'אחרי: אחרי ההדפסה/שיתוף הראשון נכפה "העתק"; הכפתור הופך ל"הדפסת העתק".',
     prep: async (page) => {
-      await page.locator('.list-item').filter({ hasText: 'מס׳ 2' }).getByRole('button', { name: 'צפייה והדפסה' }).click()
+      await page.locator('.doc-row').filter({ hasText: 'דנה לוי' }).getByRole('button', { name: 'צפייה והדפסה' }).click()
       await page.waitForSelector('[role=dialog][aria-label="תצוגת מסמך"] .doc-print')
     },
     target: '[role=dialog][aria-label="תצוגת מסמך"] .doc-print',
