@@ -1373,13 +1373,11 @@ h2 {
 }
 
 .doc-print__foot .doc-print__produced {
-  margin-top: 6px;
+  margin: 0;
   display: flex;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
-  border-top: 1px dashed #d3ddd6;
-  padding-top: 6px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1558,6 +1556,14 @@ h2 {
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
+.doc-group > td {
+  padding: 14px 10px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid var(--line);
+}
 .doc-row {
   cursor: pointer;
   border-bottom: 1px solid var(--line);
@@ -1628,6 +1634,15 @@ h2 {
 }
 .doc-detail__row:last-child {
   border-bottom: 0;
+}
+.doc-detail__row--lesson {
+  grid-template-columns: 1fr auto;
+}
+.doc-detail__heading {
+  margin: 8px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 .doc-detail__note {
   margin: 8px 0 0;

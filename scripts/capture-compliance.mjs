@@ -21,43 +21,68 @@ const business = {
 }
 
 function doc(over) {
+  const at = over.issuedAt ?? NOW
   return {
     id: over.id,
     number: over.number,
     type: over.type,
     status: over.status ?? 'issued',
-    issuedAt: NOW,
-    createdAt: NOW,
+    issuedAt: at,
+    createdAt: at,
     currency: 'ILS',
     business,
-    recipient: { name: over.recipient },
-    lineItems: [
+    recipient: { name: over.recipient, ...(over.studioId ? { studioId: over.studioId } : {}) },
+    lineItems: over.items ?? [
       { description: over.desc, quantity: 1, unitPrice: over.total, amount: over.total },
     ],
     total: over.total,
     ...(over.type === 'receipt'
       ? { payments: [{ method: 'transfer', amount: over.total }] }
       : {}),
-    ...(over.originalPrintedAt ? { originalPrintedAt: NOW } : {}),
+    ...(over.sourceRef ? { sourceRef: over.sourceRef } : {}),
   }
 }
 
+const lesson = (id, day, title, swap) => ({
+  id,
+  studioId: 'studio_a',
+  title,
+  startAt: `2026-08-${day}T07:00:00.000Z`,
+  endAt: `2026-08-${day}T08:00:00.000Z`,
+  durationHours: 1,
+  status: 'scheduled',
+  hoursConfirmed: true,
+  createdAt: NOW,
+  ...(swap ? { isSwap: true } : {}),
+})
+
 function seedStore() {
   return {
-    profiles: { [UID]: { displayName: 'ים', email: 'yam@example.com', fcmTokens: [], business } },
-    studios: {},
-    lessons: {},
+    profiles: { [UID]: { displayName: 'יעל', email: 'yael@example.com', fcmTokens: [], business } },
+    studios: {
+      [UID]: [
+        { id: 'studio_a', name: 'סטודיו גלים', hourlyRate: 150, currency: 'ILS', color: '#5B7C6A', active: true, createdAt: NOW },
+      ],
+    },
+    lessons: {
+      [UID]: [
+        lesson('l1', '05', 'מזרן בוקר', false),
+        lesson('l2', '12', 'רפורמר', false),
+        lesson('l3', '19', 'החלפת ערב', true),
+        lesson('l4', '26', 'קאדילק', false),
+      ],
+    },
     hours: {},
     payments: {},
     documents: {
       [UID]: [
-        doc({ id: 'r2', number: 2, type: 'receipt', recipient: 'דנה לוי', desc: 'מנוי חודשי — 8 שיעורים', total: 520 }),
-        doc({ id: 'r1', number: 1, type: 'receipt', recipient: 'נועה ברק', desc: 'שיעור ניסיון', total: 90, originalPrintedAt: true }),
-        doc({ id: 'inv1', number: 1, type: 'invoice', status: 'cancelled', recipient: 'לירן כהן', desc: 'שיעור פילאטיס יחיד', total: 240 }),
+        doc({ id: 'r2', number: 2, type: 'receipt', recipient: 'סטודיו גלים', studioId: 'studio_a', issuedAt: '2026-08-31T10:00:00.000Z', total: 600, items: [{ description: 'שיעורי פילאטיס — אוגוסט 2026', quantity: 4, unitPrice: 150, amount: 600 }], sourceRef: { studioId: 'studio_a', yearMonth: '2026-08' } }),
+        doc({ id: 'inv1', number: 1, type: 'invoice', status: 'cancelled', recipient: 'לירן כהן', issuedAt: '2026-08-15T10:00:00.000Z', desc: 'שיעור פילאטיס יחיד', total: 240 }),
+        doc({ id: 'r1', number: 1, type: 'receipt', recipient: 'סטודיו גלים', studioId: 'studio_a', issuedAt: '2026-07-31T10:00:00.000Z', total: 450, items: [{ description: 'שיעורי פילאטיס — יולי 2026', quantity: 3, unitPrice: 150, amount: 450 }], sourceRef: { studioId: 'studio_a', yearMonth: '2026-07' } }),
       ],
     },
     counters: { [UID]: { documentNumber: 2, invoiceNumber: 1, demandNumber: 0 } },
-    auth: { uid: UID, email: 'yam@example.com', password: 'demo1234', displayName: 'ים' },
+    auth: { uid: UID, email: 'yael@example.com', password: 'demo1234', displayName: 'יעל' },
   }
 }
 
@@ -65,9 +90,9 @@ function seedStore() {
 const shots = [
   {
     key: 'void',
-    title: 'ביטול־במקום במקום מחיקה',
-    gap: 'לפני: חשבונית/דרישה נמחקו פיזית ושברו את הרצף.',
-    after: 'אחרי: הרשומה מסומנת "מבוטל" ונשמרת — הרצף נשמר. הכפתור הוא "ביטול מסמך", לא מחיקה.',
+    title: 'טבלה עם הפרדה חודשית + ביטול־במקום',
+    gap: 'לפני: רשימה שטוחה; חשבונית/דרישה נמחקו פיזית ושברו את הרצף.',
+    after: 'אחרי: טבלה מקובצת לפי חודש (תת־כותרות), חץ להרחבה בימין, והביטול מסמן "מבוטל" ושומר את הרשומה.',
     target: '.panel',
   },
   {
@@ -94,14 +119,25 @@ const shots = [
   },
   {
     key: 'viewer',
-    title: 'מעקב מקור / העתק',
-    gap: 'לפני: "מקור" ניתן להדפסה אינסוף פעמים.',
-    after: 'אחרי: אחרי ההדפסה/שיתוף הראשון נכפה "העתק"; הכפתור הופך ל"הדפסת העתק".',
+    title: 'מקור/העתק + כותרת תחתית "הופק ב"',
+    gap: 'לפני: שורת "פטור ממע״מ" בתחתית; אין תאריך הפקה; שם קובץ ריק בהורדה.',
+    after: 'אחרי: הדפסה/שמירה = "מקור"; בתחתית "הופק ב: תאריך | סוג מספר · עמוד"; שליחה בוואטסאפ/מייל = "העתק".',
     prep: async (page) => {
-      await page.locator('.doc-row').filter({ hasText: 'דנה לוי' }).getByRole('button', { name: 'צפייה והדפסה' }).click()
+      await page.locator('.doc-row').filter({ hasText: 'קבלה 0002' }).getByRole('button', { name: 'צפייה והדפסה' }).click()
       await page.waitForSelector('[role=dialog][aria-label="תצוגת מסמך"] .doc-print')
     },
     target: '[role=dialog][aria-label="תצוגת מסמך"] .doc-print',
+  },
+  {
+    key: 'lessons',
+    title: 'פירוט השיעורים שבוצעו',
+    gap: 'לפני: אי־אפשר לראות אילו שיעורים עומדים מאחורי הקבלה.',
+    after: 'אחרי: לחיצה על שורת קבלה חודשית פותחת את רשימת השיעורים שבוצעו בפועל (תאריך, שם, שעות, החלפות).',
+    prep: async (page) => {
+      await page.locator('.doc-row').filter({ hasText: 'קבלה 0002' }).click()
+      await page.waitForSelector('.doc-detail__row--lesson')
+    },
+    target: '.panel',
   },
   {
     key: 'draft',

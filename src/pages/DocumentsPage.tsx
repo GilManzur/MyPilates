@@ -9,8 +9,15 @@ import { DocumentLedger } from '../components/DocumentLedger'
 import { SequenceCheck } from '../components/SequenceCheck'
 import { Overlay } from '../components/Overlay'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
-import { archiveReceiptPdf, elementToPdfBlob, shareDocumentPdf } from '../lib/share/documentPdf'
+import {
+  archiveReceiptPdf,
+  elementToPdfBlob,
+  shareDocumentPdf,
+  type ShareChannel,
+} from '../lib/share/documentPdf'
 import { useDocuments } from '../hooks/useDocuments'
+import { useAuth } from '../contexts/AuthContext'
+import { getRepository } from '../lib/data'
 import { useProfile } from '../hooks/useProfile'
 import { useStudios } from '../hooks/useStudios'
 import type { DocumentDraft } from '../lib/data/types'
@@ -23,12 +30,13 @@ import {
   PAYMENT_BEARING_TYPES,
 } from '../lib/documents'
 import { formatILSExact, currentYearMonth } from '../lib/money/calculations'
-import { formatShortDate } from '../lib/dates'
+import { formatShortDate, formatMonthTitle } from '../lib/dates'
 import type {
   DocumentLineItem,
   DocumentPayment,
   DocumentType,
   FinancialDocument,
+  Lesson,
   PaymentMethod,
 } from '../types'
 
@@ -60,7 +68,8 @@ const emptyForm = {
 }
 
 export function DocumentsPage() {
-  const { documents, counters, loading, issue, cancel, voidDoc, markPrinted } = useDocuments()
+  const { documents, counters, loading, issue, cancel, voidDoc } = useDocuments()
+  const { user } = useAuth()
   const { business } = useProfile()
   const { studios } = useStudios()
   const [open, setOpen] = useState(false)
@@ -72,6 +81,8 @@ export function DocumentsPage() {
   const [showSequence, setShowSequence] = useState(false)
   const [ledgerMonth, setLedgerMonth] = useState<string | null>(null)
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null)
+  // Lazily-loaded performed lessons per expanded document ('loading' while fetching).
+  const [lessonsByDoc, setLessonsByDoc] = useState<Record<string, Lesson[] | 'loading'>>({})
   const [preview, setPreview] = useState(false)
   // True only while rasterizing for WhatsApp/PDF, so the delivered copy is
   // stamped "מסמך ממוחשב" (חוזר 24/2004) while the paper print is not.
@@ -84,24 +95,29 @@ export function DocumentsPage() {
   const [sharing, setSharing] = useState(false)
   const [shareNote, setShareNote] = useState('')
 
-  // Opening a document that already produced its "מקור" defaults to "העתק".
   const openViewer = (id: string) => {
-    const target = documents.find((doc) => doc.id === id)
-    setCopyMode(target?.originalPrintedAt != null)
+    // Viewing/printing shows the original ("מקור"); only sent copies are "העתק".
+    setCopyMode(false)
     setShareNote('')
     setViewerId(id)
   }
 
-  const printWith = async (copy: boolean) => {
+  /** File name base (no extension): `קבלה 0001 - שם בעל העסק`. */
+  const docFileBase = (doc: FinancialDocument) =>
+    `${documentTypeLabel(doc.type)} ${formatDocumentNumber(doc.type, doc.number)} - ${doc.business.legalName}`
+
+  // Print / save as PDF — always the original ("מקור"). Names the saved file via
+  // document.title (the browser's default "Save as PDF" file name).
+  const onPrint = () => {
     if (!viewed) return
-    if (!copy && !viewed.originalPrintedAt) {
-      // First output of the original — stamp it so every later print is "העתק".
-      await markPrinted(viewed.id)
-      setCopyMode(false)
-    } else {
-      setCopyMode(copy || viewed.originalPrintedAt != null)
+    setCopyMode(false)
+    const previousTitle = document.title
+    document.title = docFileBase(viewed)
+    const restore = () => {
+      document.title = previousTitle
+      window.removeEventListener('afterprint', restore)
     }
-    // Let React paint the correct מקור/העתק label before the print dialog opens.
+    window.addEventListener('afterprint', restore)
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
   }
 
@@ -130,7 +146,7 @@ export function DocumentsPage() {
           const blob = await elementToPdfBlob(node)
           const number = formatDocumentNumber(target.type, target.number)
           await archiveReceiptPdf(blob, {
-            fileName: `${documentTypeLabel(target.type)} (${number}) - ${target.recipient.name}.pdf`,
+            fileName: `${docFileBase(target)}.pdf`,
             yearMonth: target.issuedAt.slice(0, 7),
             number,
             type: target.type,
@@ -149,22 +165,95 @@ export function DocumentsPage() {
     }
   }, [archivePendingId, viewerId, documents])
 
-  const onShareWhatsApp = async () => {
+  // Load the performed lessons behind an expanded studio-month document.
+  useEffect(() => {
+    if (!expandedDocId || !user) return
+    const target = documents.find((d) => d.id === expandedDocId)
+    const source = target?.sourceRef
+    if (!source || lessonsByDoc[expandedDocId]) return
+    let cancelled = false
+    setLessonsByDoc((m) => ({ ...m, [expandedDocId]: 'loading' }))
+    void getRepository()
+      .listLessons(user.uid, source.yearMonth)
+      .then((list) => {
+        if (cancelled) return
+        const performed = list.filter(
+          (l) => l.studioId === source.studioId && l.hoursConfirmed && l.status !== 'cancelled',
+        )
+        setLessonsByDoc((m) => ({ ...m, [expandedDocId]: performed }))
+      })
+      .catch(() => {
+        if (!cancelled) setLessonsByDoc((m) => ({ ...m, [expandedDocId]: [] }))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [expandedDocId, user, documents, lessonsByDoc])
+
+  // Documents grouped by issue month (newest first) for per-month sub-headers.
+  const groupedDocuments = useMemo(() => {
+    const sorted = [...documents].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const groups: { ym: string; docs: FinancialDocument[] }[] = []
+    for (const doc of sorted) {
+      const ym = doc.issuedAt.slice(0, 7)
+      const last = groups[groups.length - 1]
+      if (last && last.ym === ym) last.docs.push(doc)
+      else groups.push({ ym, docs: [doc] })
+    }
+    return groups
+  }, [documents])
+
+  // Send via WhatsApp / email — the delivered file is a "העתק — נאמן למקור"
+  // and a "מסמך ממוחשב" (electronically-transmitted copy).
+  // Expanded-row content: the actual performed lessons for a studio-month
+  // receipt, otherwise the document's own line items.
+  const renderDetail = (doc: FinancialDocument) => {
+    const lessons = doc.sourceRef ? lessonsByDoc[doc.id] : undefined
+    if (lessons === 'loading') {
+      return <p className="doc-detail__note">טוען שיעורים…</p>
+    }
+    if (Array.isArray(lessons) && lessons.length > 0) {
+      return (
+        <>
+          <p className="doc-detail__heading">שיעורים שבוצעו בפועל</p>
+          <div className="doc-detail__list">
+            {lessons.map((lesson) => (
+              <div key={lesson.id} className="doc-detail__row doc-detail__row--lesson">
+                <span>
+                  {formatShortDate(lesson.startAt)} · {lesson.title}
+                  {lesson.isSwap && ' · החלפה'}
+                </span>
+                <span>{lesson.durationHours} שע׳</span>
+              </div>
+            ))}
+          </div>
+          {doc.note && <p className="doc-detail__note">{doc.note}</p>}
+        </>
+      )
+    }
+    return (
+      <div className="doc-detail__list">
+        {doc.lineItems.map((item, index) => (
+          <div key={index} className="doc-detail__row">
+            <span>{item.description}</span>
+            <span>
+              {item.quantity} × {formatILSExact(item.unitPrice)}
+            </span>
+            <span>{formatILSExact(item.amount)}</span>
+          </div>
+        ))}
+        {doc.note && <p className="doc-detail__note">{doc.note}</p>}
+      </div>
+    )
+  }
+
+  const onShare = async (channel: ShareChannel) => {
     if (!viewed) return
     setSharing(true)
     setShareNote('')
-    // The delivered file is a "מסמך ממוחשב" (electronically-transmitted copy).
     setMarkComputerized(true)
-    // Sharing delivers the document to the recipient: the first share produces
-    // the original ("מקור") and stamps it; later shares go out as "העתק".
-    if (!viewed.originalPrintedAt) {
-      await markPrinted(viewed.id)
-      setCopyMode(false)
-    } else {
-      setCopyMode(true)
-    }
-    // Repaint the מקור/העתק label before we grab the node (also lets the
-    // markPrinted refresh settle so React won't clobber the capture class).
+    setCopyMode(true)
+    // Repaint the "העתק"/"מסמך ממוחשב" labels before we grab the node.
     await new Promise((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(resolve)),
     )
@@ -172,6 +261,8 @@ export function DocumentsPage() {
       .getElementById('print-root')
       ?.querySelector('.doc-print') as HTMLElement | null
     if (!node) {
+      setMarkComputerized(false)
+      setCopyMode(false)
       setSharing(false)
       return
     }
@@ -186,19 +277,25 @@ export function DocumentsPage() {
       const label = documentTypeLabel(viewed.type)
       const outcome = await shareDocumentPdf({
         blob,
-        fileName: `${label} (${number}) - ${viewed.recipient.name}.pdf`,
+        fileName: `${docFileBase(viewed)}.pdf`,
         title: `${label} ${number}`,
         text: `${label} מס׳ ${number} מאת ${viewed.business.legalName} · סה״כ ${formatILSExact(viewed.total)}`,
+        channel,
         phone: viewed.recipient.phone,
       })
       if (outcome === 'fallback') {
-        setShareNote('הדפדפן לא תומך בשיתוף קבצים — הקובץ ירד למכשיר ונפתחה שיחת וואטסאפ.')
+        setShareNote(
+          channel === 'email'
+            ? 'הדפדפן לא תומך בשיתוף קבצים — הקובץ ירד למכשיר ונפתחה טיוטת מייל לצירופו.'
+            : 'הדפדפן לא תומך בשיתוף קבצים — הקובץ ירד למכשיר ונפתחה שיחת וואטסאפ.',
+        )
       }
     } catch {
       setShareNote('אירעה שגיאה בהכנת הקובץ. נסי שוב.')
     } finally {
       node.classList.remove('doc-print--capture')
       setMarkComputerized(false)
+      setCopyMode(false)
       setSharing(false)
     }
   }
@@ -455,90 +552,88 @@ export function DocumentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {documents.map((doc) => {
-                  const canCancel = doc.status === 'issued' && doc.type === 'receipt'
-                  const canRefund = doc.status === 'issued' && doc.type === 'receipt'
-                  const canVoid = isVoidableDocumentType(doc.type) && doc.status === 'issued'
-                  const expanded = expandedDocId === doc.id
-                  return (
-                    <Fragment key={doc.id}>
-                      <tr
-                        className="doc-row"
-                        onClick={() => setExpandedDocId(expanded ? null : doc.id)}
-                        aria-expanded={expanded}
-                      >
-                        <td className="doc-row__toggle">
-                          <span className={expanded ? 'open' : ''}>
-                            <Icon name="chevron" size={16} />
-                          </span>
-                        </td>
-                        <td className="doc-row__doc">
-                          <strong>
-                            {documentTypeLabel(doc.type)} {formatDocumentNumber(doc.type, doc.number)}
-                          </strong>
-                          <span className="doc-row__sub">
-                            {formatShortDate(doc.issuedAt)}
-                            {doc.status === 'cancelled' && (
-                              <span className="doc-row__void"> · מבוטל</span>
-                            )}
-                          </span>
-                        </td>
-                        <td>{doc.recipient.name}</td>
-                        <td className="doc-row__amount">{formatILSExact(doc.total)}</td>
-                        <td className="doc-row__actions" onClick={(e) => e.stopPropagation()}>
-                          <span>
-                            <IconButton
-                              label="צפייה והדפסה"
-                              icon="print"
-                              onClick={() => openViewer(doc.id)}
-                            />
-                            {canRefund && (
-                              <IconButton
-                                label="החזר כספי"
-                                icon="refund"
-                                onClick={() => void onRefundDocument(doc)}
-                              />
-                            )}
-                            {canCancel && (
-                              <IconButton
-                                label="ביטול"
-                                icon="cancel"
-                                variant="danger"
-                                onClick={() => void onCancelDocument(doc)}
-                              />
-                            )}
-                            {canVoid && (
-                              <IconButton
-                                label="ביטול מסמך"
-                                icon="cancel"
-                                variant="danger"
-                                onClick={() => void onVoidDocument(doc)}
-                              />
-                            )}
-                          </span>
-                        </td>
-                      </tr>
-                      {expanded && (
-                        <tr className="doc-detail">
-                          <td colSpan={5}>
-                            <div className="doc-detail__list">
-                              {doc.lineItems.map((item, index) => (
-                                <div key={index} className="doc-detail__row">
-                                  <span>{item.description}</span>
-                                  <span>
-                                    {item.quantity} × {formatILSExact(item.unitPrice)}
-                                  </span>
-                                  <span>{formatILSExact(item.amount)}</span>
-                                </div>
-                              ))}
-                              {doc.note && <p className="doc-detail__note">{doc.note}</p>}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  )
-                })}
+                {groupedDocuments.map((group) => (
+                  <Fragment key={group.ym}>
+                    <tr className="doc-group">
+                      <td colSpan={5}>{formatMonthTitle(group.ym)}</td>
+                    </tr>
+                    {group.docs.map((doc) => {
+                      const canCancel = doc.status === 'issued' && doc.type === 'receipt'
+                      const canRefund = doc.status === 'issued' && doc.type === 'receipt'
+                      const canVoid = isVoidableDocumentType(doc.type) && doc.status === 'issued'
+                      const expanded = expandedDocId === doc.id
+                      return (
+                        <Fragment key={doc.id}>
+                          <tr
+                            className="doc-row"
+                            onClick={() => setExpandedDocId(expanded ? null : doc.id)}
+                            aria-expanded={expanded}
+                          >
+                            <td className="doc-row__toggle">
+                              <span className={expanded ? 'open' : ''}>
+                                <Icon name="chevron" size={16} />
+                              </span>
+                            </td>
+                            <td className="doc-row__doc">
+                              <strong>
+                                {documentTypeLabel(doc.type)}{' '}
+                                {formatDocumentNumber(doc.type, doc.number)}
+                              </strong>
+                              <span className="doc-row__sub">
+                                {formatShortDate(doc.issuedAt)}
+                                {doc.status === 'cancelled' && (
+                                  <span className="doc-row__void"> · מבוטל</span>
+                                )}
+                              </span>
+                            </td>
+                            <td>{doc.recipient.name}</td>
+                            <td className="doc-row__amount">{formatILSExact(doc.total)}</td>
+                            <td
+                              className="doc-row__actions"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span>
+                                <IconButton
+                                  label="צפייה והדפסה"
+                                  icon="print"
+                                  onClick={() => openViewer(doc.id)}
+                                />
+                                {canRefund && (
+                                  <IconButton
+                                    label="החזר כספי"
+                                    icon="refund"
+                                    onClick={() => void onRefundDocument(doc)}
+                                  />
+                                )}
+                                {canCancel && (
+                                  <IconButton
+                                    label="ביטול"
+                                    icon="cancel"
+                                    variant="danger"
+                                    onClick={() => void onCancelDocument(doc)}
+                                  />
+                                )}
+                                {canVoid && (
+                                  <IconButton
+                                    label="ביטול מסמך"
+                                    icon="cancel"
+                                    variant="danger"
+                                    onClick={() => void onVoidDocument(doc)}
+                                  />
+                                )}
+                              </span>
+                            </td>
+                          </tr>
+                          {expanded && (
+                            <tr className="doc-detail">
+                              <td colSpan={5}>{renderDetail(doc)}</td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </Fragment>
+                ))}
               </tbody>
             </table>
           </div>
@@ -795,21 +890,17 @@ export function DocumentsPage() {
             <Button variant="secondary" onClick={() => setViewerId(null)}>
               סגירה
             </Button>
-            {!viewed.originalPrintedAt && (
-              <Button variant="secondary" onClick={() => void printWith(true)}>
-                הדפסת עותק
-              </Button>
-            )}
-            <Button onClick={() => void printWith(false)}>
-              {viewed.originalPrintedAt ? 'הדפסת העתק / PDF' : 'הדפסה / שמירה כ‑PDF'}
-            </Button>
+            <Button onClick={onPrint}>הדפסה / שמירה כ‑PDF</Button>
             <Button
               className="btn--whatsapp"
-              onClick={() => void onShareWhatsApp()}
+              onClick={() => void onShare('whatsapp')}
               disabled={sharing}
             >
               <Icon name="whatsapp" />
               {sharing ? 'מכין…' : 'שליחה בוואטסאפ'}
+            </Button>
+            <Button variant="secondary" onClick={() => void onShare('email')} disabled={sharing}>
+              שליחה במייל
             </Button>
           </div>
           {shareNote && (

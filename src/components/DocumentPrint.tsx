@@ -157,16 +157,15 @@ export function DocumentPrint({
 
       {doc.note && <p className="doc-print__note">{doc.note}</p>}
 
-      <footer className="doc-print__foot">
-        <p>עוסק פטור — פטור ממע״מ לפי סעיף 31(3) לחוק מע״מ.</p>
-        {!draft && (
+      {!draft && (
+        <footer className="doc-print__foot">
           <p className="doc-print__produced">
             הופק ב: {formatDate(producedAt ?? new Date().toISOString())} |{' '}
             {documentTypeLabel(doc.type)} {formatDocumentNumber(doc.type, doc.number)} · עמוד 1
             מתוך 1
           </p>
-        )}
-      </footer>
+        </footer>
+      )}
     </article>
   )
 }

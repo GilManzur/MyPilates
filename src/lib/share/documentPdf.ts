@@ -53,20 +53,23 @@ export function normalizeIsraeliPhone(raw?: string): string | undefined {
 }
 
 export type ShareOutcome = 'shared' | 'fallback'
+export type ShareChannel = 'whatsapp' | 'email'
 
 /**
  * Shares the PDF via the native share sheet when the browser supports sharing
- * files (mobile: the user picks WhatsApp and the recipient there). Otherwise
- * falls back to downloading the PDF and opening WhatsApp with a text message.
+ * files (mobile: the user picks the target app). Otherwise falls back to
+ * downloading the PDF and opening WhatsApp / an email draft with a message.
  */
 export async function shareDocumentPdf(opts: {
   blob: Blob
   fileName: string
   title: string
   text: string
+  channel: ShareChannel
   phone?: string
+  email?: string
 }): Promise<ShareOutcome> {
-  const { blob, fileName, title, text, phone } = opts
+  const { blob, fileName, title, text, channel, phone, email } = opts
   const file = new File([blob], fileName, { type: 'application/pdf' })
   const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean }
 
@@ -81,12 +84,20 @@ export async function shareDocumentPdf(opts: {
     }
   }
 
+  // No native file share: download the PDF, then open the channel to attach it.
   downloadBlob(blob, fileName)
-  const intl = normalizeIsraeliPhone(phone)
-  const waUrl = intl
-    ? `https://wa.me/${intl}?text=${encodeURIComponent(text)}`
-    : `https://wa.me/?text=${encodeURIComponent(text)}`
-  window.open(waUrl, '_blank', 'noopener')
+  if (channel === 'email') {
+    const url = `mailto:${email ?? ''}?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(
+      text,
+    )}`
+    window.open(url, '_blank', 'noopener')
+  } else {
+    const intl = normalizeIsraeliPhone(phone)
+    const waUrl = intl
+      ? `https://wa.me/${intl}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(waUrl, '_blank', 'noopener')
+  }
   return 'fallback'
 }
 
