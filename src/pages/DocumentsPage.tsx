@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
@@ -64,7 +64,7 @@ const emptyForm = {
   cardType: '',
   reference: '',
   note: '',
-  recipientConsent: false,
+  recipientConsent: true,
 }
 
 export function DocumentsPage() {
@@ -83,6 +83,8 @@ export function DocumentsPage() {
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null)
   // Lazily-loaded performed lessons per expanded document ('loading' while fetching).
   const [lessonsByDoc, setLessonsByDoc] = useState<Record<string, Lesson[] | 'loading'>>({})
+  // Document ids whose lessons we've already started fetching (dedupe, no re-fetch).
+  const fetchedLessonsRef = useRef<Set<string>>(new Set())
   const [preview, setPreview] = useState(false)
   // True only while rasterizing for WhatsApp/PDF, so the delivered copy is
   // stamped "מסמך ממוחשב" (חוזר 24/2004) while the paper print is not.
@@ -102,9 +104,15 @@ export function DocumentsPage() {
     setViewerId(id)
   }
 
-  /** File name base (no extension): `קבלה 0001 - שם בעל העסק`. */
-  const docFileBase = (doc: FinancialDocument) =>
-    `${documentTypeLabel(doc.type)} ${formatDocumentNumber(doc.type, doc.number)} - ${doc.business.legalName}`
+  /** File name base (no extension): `קבלה 0001 - שם מלא`. Uses the current
+   * profile's full name (set in settings), falling back to the business name. */
+  const docFileBase = useCallback(
+    (doc: FinancialDocument) => {
+      const name = business?.ownerFullName?.trim() || business?.legalName || doc.business.legalName
+      return `${documentTypeLabel(doc.type)} ${formatDocumentNumber(doc.type, doc.number)} - ${name}`
+    },
+    [business],
+  )
 
   // Print / save as PDF — always the original ("מקור"). Names the saved file via
   // document.title (the browser's default "Save as PDF" file name).
@@ -163,32 +171,35 @@ export function DocumentsPage() {
     return () => {
       cancelled = true
     }
-  }, [archivePendingId, viewerId, documents])
+  }, [archivePendingId, viewerId, documents, docFileBase])
 
   // Load the performed lessons behind an expanded studio-month document.
+  // Note: `lessonsByDoc` is deliberately NOT a dependency — including it made
+  // the "loading" state-update re-run the effect and cancel the in-flight fetch
+  // (worked with the synchronous local repo, hung on async Firestore). We dedupe
+  // with a ref and always resolve the state.
   useEffect(() => {
     if (!expandedDocId || !user) return
-    const target = documents.find((d) => d.id === expandedDocId)
+    const docId = expandedDocId
+    const target = documents.find((d) => d.id === docId)
     const source = target?.sourceRef
-    if (!source || lessonsByDoc[expandedDocId]) return
-    let cancelled = false
-    setLessonsByDoc((m) => ({ ...m, [expandedDocId]: 'loading' }))
-    void getRepository()
+    if (!source || fetchedLessonsRef.current.has(docId)) return
+    fetchedLessonsRef.current.add(docId)
+    setLessonsByDoc((m) => ({ ...m, [docId]: 'loading' }))
+    getRepository()
       .listLessons(user.uid, source.yearMonth)
       .then((list) => {
-        if (cancelled) return
         const performed = list.filter(
-          (l) => l.studioId === source.studioId && l.hoursConfirmed && l.status !== 'cancelled',
+          (l) => l.studioId === source.studioId && l.status !== 'cancelled',
         )
-        setLessonsByDoc((m) => ({ ...m, [expandedDocId]: performed }))
+        setLessonsByDoc((m) => ({ ...m, [docId]: performed }))
       })
       .catch(() => {
-        if (!cancelled) setLessonsByDoc((m) => ({ ...m, [expandedDocId]: [] }))
+        // Allow a retry on a later expand.
+        fetchedLessonsRef.current.delete(docId)
+        setLessonsByDoc((m) => ({ ...m, [docId]: [] }))
       })
-    return () => {
-      cancelled = true
-    }
-  }, [expandedDocId, user, documents, lessonsByDoc])
+  }, [expandedDocId, user, documents])
 
   // Documents grouped by issue month (newest first) for per-month sub-headers.
   const groupedDocuments = useMemo(() => {
@@ -230,6 +241,10 @@ export function DocumentsPage() {
           {doc.note && <p className="doc-detail__note">{doc.note}</p>}
         </>
       )
+    }
+    if (doc.sourceRef && Array.isArray(lessons)) {
+      // Loaded, but no lessons linked to this studio-month.
+      return <p className="doc-detail__note">לא נמצאו שיעורים מקושרים לחודש זה.</p>
     }
     return (
       <div className="doc-detail__list">
@@ -275,13 +290,18 @@ export function DocumentsPage() {
       const blob = await elementToPdfBlob(node)
       const number = formatDocumentNumber(viewed.type, viewed.number)
       const label = documentTypeLabel(viewed.type)
+      // Pre-fill the recipient from the linked studio's saved contact.
+      const studio = viewed.recipient.studioId
+        ? studios.find((s) => s.id === viewed.recipient.studioId)
+        : undefined
       const outcome = await shareDocumentPdf({
         blob,
         fileName: `${docFileBase(viewed)}.pdf`,
         title: `${label} ${number}`,
         text: `${label} מס׳ ${number} מאת ${viewed.business.legalName} · סה״כ ${formatILSExact(viewed.total)}`,
         channel,
-        phone: viewed.recipient.phone,
+        phone: studio?.phone ?? viewed.recipient.phone,
+        email: studio?.email,
       })
       if (outcome === 'fallback') {
         setShareNote(

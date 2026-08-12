@@ -11,6 +11,8 @@ export interface BusinessProfile {
   address?: string
   phone?: string
   email?: string
+  /** Personal full name used in the sent/downloaded file name (falls back to legalName). */
+  ownerFullName?: string
 }
 
 export interface UserProfile {
@@ -26,6 +28,9 @@ export interface Studio {
   hourlyRate: number
   currency: 'ILS'
   color: string
+  /** Contact used to pre-fill WhatsApp / email when sending the studio a document. */
+  phone?: string
+  email?: string
   /** Fixed pay per work day at this studio. 0 = no travel pay. */
   travelPay: number
   /** Hourly rate for swap/replacement lessons. 0 = swap pay disabled. */

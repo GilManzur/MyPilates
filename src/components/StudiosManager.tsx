@@ -14,6 +14,8 @@ export function StudiosManager() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Studio | null>(null)
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [hourlyRate, setHourlyRate] = useState('150')
   const [color, setColor] = useState(STUDIO_COLORS[0])
   const [travelEnabled, setTravelEnabled] = useState(false)
@@ -33,6 +35,8 @@ export function StudiosManager() {
   const openCreate = () => {
     setEditing(null)
     setName('')
+    setPhone('')
+    setEmail('')
     setHourlyRate('150')
     setColor(STUDIO_COLORS[studios.length % STUDIO_COLORS.length])
     setTravelEnabled(false)
@@ -45,6 +49,8 @@ export function StudiosManager() {
   const openEdit = (studio: Studio) => {
     setEditing(studio)
     setName(studio.name)
+    setPhone(studio.phone ?? '')
+    setEmail(studio.email ?? '')
     setHourlyRate(String(studio.hourlyRate))
     setColor(studio.color)
     const hasTravel = (studio.travelPay ?? 0) > 0
@@ -71,6 +77,8 @@ export function StudiosManager() {
       color,
       travelPay: travelEnabled ? travelValue : 0,
       swapPay: swapEnabled ? swapValue : 0,
+      phone,
+      email,
     })
     setOpen(false)
   }
@@ -135,6 +143,23 @@ export function StudiosManager() {
             <Field label="שם הסטודיו">
               <TextInput required value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
+            <div className="grid-2">
+              <Field label="טלפון (לשליחת מסמכים, אופציונלי)">
+                <TextInput
+                  type="tel"
+                  placeholder="05X-XXXXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </Field>
+              <Field label="אימייל (לשליחת מסמכים, אופציונלי)">
+                <TextInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Field>
+            </div>
             <Field label="שכר שעתי (₪)">
               <TextInput
                 type="number"

@@ -7,6 +7,7 @@ import type { BusinessProfile } from '../types'
 export function BusinessDetails() {
   const { business, loading, saveBusiness } = useProfile()
   const [legalName, setLegalName] = useState('')
+  const [ownerFullName, setOwnerFullName] = useState('')
   const [taxId, setTaxId] = useState('')
   const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
@@ -17,6 +18,7 @@ export function BusinessDetails() {
   useEffect(() => {
     if (!business) return
     setLegalName(business.legalName)
+    setOwnerFullName(business.ownerFullName ?? '')
     setTaxId(business.taxId)
     setAddress(business.address ?? '')
     setPhone(business.phone ?? '')
@@ -28,6 +30,7 @@ export function BusinessDetails() {
     if (!legalName.trim() || !taxId.trim()) return
     // Only include optional fields when present — Firestore rejects `undefined`.
     const next: BusinessProfile = { legalName: legalName.trim(), taxId: taxId.trim() }
+    if (ownerFullName.trim()) next.ownerFullName = ownerFullName.trim()
     if (address.trim()) next.address = address.trim()
     if (phone.trim()) next.phone = phone.trim()
     if (email.trim()) next.email = email.trim()
@@ -68,6 +71,15 @@ export function BusinessDetails() {
               value={taxId}
               onChange={(e) => {
                 setTaxId(e.target.value)
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <Field label="שם מלא (יופיע בשם הקובץ שנשלח/יורד, אופציונלי)">
+            <TextInput
+              value={ownerFullName}
+              onChange={(e) => {
+                setOwnerFullName(e.target.value)
                 setSaved(false)
               }}
             />

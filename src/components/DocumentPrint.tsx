@@ -1,7 +1,6 @@
 import { format, parseISO } from 'date-fns'
 import { formatILSExact } from '../lib/money/calculations'
 import {
-  amountToHebrewWords,
   documentTypeLabel,
   formatDocumentNumber,
   PAYMENT_BEARING_TYPES,
@@ -51,8 +50,6 @@ export function DocumentPrint({
   const showLineItems = doc.lineItems.length > 0
   const showPayments =
     PAYMENT_BEARING_TYPES.includes(doc.type) && (doc.payments?.length ?? 0) > 0
-  const totalInWords =
-    PAYMENT_BEARING_TYPES.includes(doc.type) ? amountToHebrewWords(doc.total) : ''
 
   return (
     <article className="doc-print" dir="rtl">
@@ -131,7 +128,6 @@ export function DocumentPrint({
         <span>סה״כ</span>
         <strong>{formatILSExact(doc.total)}</strong>
       </div>
-      {totalInWords && <p className="doc-print__words">במילים: {totalInWords}</p>}
 
       {showPayments && (
         <section className="doc-print__payments">
