@@ -2,9 +2,11 @@ import type {
   DocumentLineItem,
   DocumentPayment,
   DocumentType,
+  FinancialDocument,
   PaymentMethod,
   StudioMonthSummary,
 } from '../types'
+import type { DocumentCounters } from './data/types'
 import { roundHours } from './money/calculations'
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
@@ -71,6 +73,46 @@ export function formatDocumentNumber(type: DocumentType, number: number): string
     return `INV-${String(number).padStart(PREFIXED_NUMBER_WIDTH, '0')}`
   }
   return String(number)
+}
+
+/** The three running-number sequences, with a display label and a sample type for formatting. */
+const SEQUENCE_META: { key: DocumentCounterKey; label: string; sampleType: DocumentType }[] = [
+  { key: 'documentNumber', label: 'קבלות, ביטולים והחזרים', sampleType: 'receipt' },
+  { key: 'invoiceNumber', label: 'חשבוניות עסקה', sampleType: 'invoice' },
+  { key: 'demandNumber', label: 'דרישות תשלום', sampleType: 'demand' },
+]
+
+export interface SequenceReport {
+  key: DocumentCounterKey
+  label: string
+  /** A representative type used to format numbers in this sequence. */
+  sampleType: DocumentType
+  /** Last number assigned to the sequence (0 if none). */
+  last: number
+  /** How many numbers in [1..last] were actually issued. */
+  issuedCount: number
+  /** Numbers in [1..last] with no document — a broken sequence (נספח ה׳ א5). */
+  missing: number[]
+}
+
+/**
+ * Checks each running-number sequence for gaps: any number in `[1..last]`
+ * without a corresponding document. Implements the נספח ה׳ (א)(5) requirement
+ * to state the missing documents explicitly, not merely list what exists.
+ */
+export function findSequenceGaps(
+  documents: Pick<FinancialDocument, 'type' | 'number'>[],
+  counters: DocumentCounters,
+): SequenceReport[] {
+  return SEQUENCE_META.map(({ key, label, sampleType }) => {
+    const issued = new Set(
+      documents.filter((d) => counterKeyForDocumentType(d.type) === key).map((d) => d.number),
+    )
+    const last = counters[key]
+    const missing: number[] = []
+    for (let n = 1; n <= last; n++) if (!issued.has(n)) missing.push(n)
+    return { key, label, sampleType, last, issuedCount: issued.size, missing }
+  })
 }
 
 function round2(value: number): number {

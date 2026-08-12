@@ -1402,6 +1402,130 @@ h2 {
 }
 
 /* ============================================================
+   Compliance reports: sequence check + monthly ledger (ריכוז).
+   ============================================================ */
+.page-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+/* Keep the action cluster from stretching like the title column. */
+.page-head > .page-head__actions {
+  flex: 0 0 auto;
+}
+
+.report-sheet {
+  position: relative;
+  z-index: 61;
+  width: 100%;
+  max-width: 720px;
+  margin: calc(12px + env(safe-area-inset-top)) auto
+    calc(16px + env(safe-area-inset-bottom));
+  background: var(--surface-solid);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  color: var(--ink);
+}
+
+.report-sheet__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.report-sheet__bar h2 { margin: 0; font-size: 20px; }
+.report-sheet__bar-actions { display: flex; gap: 8px; }
+
+.report-sheet__banner {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+.report-sheet__banner--ok { background: rgba(91, 124, 106, 0.16); color: #33604a; }
+.report-sheet__banner--bad { background: rgba(155, 77, 77, 0.14); color: var(--danger); }
+
+.report-sheet__body { display: flex; flex-direction: column; gap: 10px; }
+
+.seq-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.seq-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.seq-card__label { font-weight: 600; font-size: 14.5px; }
+.seq-card__missing {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+.seq-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.seq-pill--ok { background: rgba(91, 124, 106, 0.16); color: #33604a; }
+.seq-pill--bad { background: rgba(155, 77, 77, 0.14); color: var(--danger); }
+.seq-pill--muted { background: var(--line); color: var(--ink-soft); }
+
+/* Monthly ledger — printable output, styled like the document print. */
+.doc-ledger {
+  background: #ffffff;
+  color: #14201b;
+  border-radius: 12px;
+  padding: 22px;
+  font-family: var(--font-body);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.doc-ledger__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid #14201b;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.doc-ledger__head h1 { margin: 0 0 4px; font-size: 19px; }
+.doc-ledger__head p { margin: 0; font-size: 12.5px; color: #3a463f; }
+.doc-ledger__meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12.5px; text-align: end; }
+.doc-ledger__nature { font-weight: 700; font-size: 15px; }
+.doc-ledger__empty { font-size: 14px; color: #3a463f; }
+.doc-ledger__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.doc-ledger__table th,
+.doc-ledger__table td { border: 1px solid #d3ddd6; padding: 7px 8px; text-align: start; }
+.doc-ledger__table th { background: #f0f4f1; font-weight: 600; }
+.doc-ledger__table td:last-child,
+.doc-ledger__table th:last-child { text-align: end; font-variant-numeric: tabular-nums; }
+.doc-ledger__row--void td { color: #9b4d4d; text-decoration: line-through; }
+.doc-ledger__row--void td:nth-child(5) { text-decoration: none; font-weight: 600; }
+.doc-ledger__table tfoot td { border-top: 2px solid #14201b; font-weight: 800; }
+.doc-ledger__end {
+  text-align: center;
+  font-size: 11px;
+  color: #6a766f;
+  letter-spacing: 3px;
+  margin: 12px 0 0;
+}
+
+/* ============================================================
    Desktop layout (≥1024px).
    Everything above (the mobile experience) is left untouched;
    every rule here is additive and scoped to wide viewports.

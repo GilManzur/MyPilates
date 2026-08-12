@@ -5,6 +5,8 @@ import { IconButton } from '../components/IconButton'
 import { Icon } from '../components/Icon'
 import { Field, TextArea, TextInput, TextSelect } from '../components/Field'
 import { DocumentPrint } from '../components/DocumentPrint'
+import { DocumentLedger } from '../components/DocumentLedger'
+import { SequenceCheck } from '../components/SequenceCheck'
 import { Overlay } from '../components/Overlay'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { elementToPdfBlob, shareDocumentPdf } from '../lib/share/documentPdf'
@@ -20,7 +22,7 @@ import {
   paymentMethodLabel,
   PAYMENT_BEARING_TYPES,
 } from '../lib/documents'
-import { formatILSExact } from '../lib/money/calculations'
+import { formatILSExact, currentYearMonth } from '../lib/money/calculations'
 import { formatShortDate } from '../lib/dates'
 import type {
   DocumentLineItem,
@@ -57,7 +59,7 @@ const emptyForm = {
 }
 
 export function DocumentsPage() {
-  const { documents, loading, issue, cancel, voidDoc, markPrinted } = useDocuments()
+  const { documents, counters, loading, issue, cancel, voidDoc, markPrinted } = useDocuments()
   const { business } = useProfile()
   const { studios } = useStudios()
   const [open, setOpen] = useState(false)
@@ -66,6 +68,8 @@ export function DocumentsPage() {
   const [saving, setSaving] = useState(false)
   const [viewerId, setViewerId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+  const [showSequence, setShowSequence] = useState(false)
+  const [ledgerMonth, setLedgerMonth] = useState<string | null>(null)
 
   const viewed = viewerId ? documents.find((doc) => doc.id === viewerId) ?? null : null
   const [copyMode, setCopyMode] = useState(false)
@@ -321,9 +325,21 @@ export function DocumentsPage() {
           <p className="eyebrow">מסמכים</p>
           <h1>קבלות ומסמכים</h1>
         </div>
-        <Button onClick={openNew} disabled={!business}>
-          מסמך חדש
-        </Button>
+        <div className="page-head__actions">
+          <Button variant="secondary" onClick={() => setShowSequence(true)}>
+            בדיקת רצף
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setLedgerMonth(currentYearMonth())}
+            disabled={!business}
+          >
+            ריכוז חודשי
+          </Button>
+          <Button onClick={openNew} disabled={!business}>
+            מסמך חדש
+          </Button>
+        </div>
       </div>
 
       {!business && (
@@ -654,6 +670,28 @@ export function DocumentsPage() {
             />
           </div>
         </div>
+        </Overlay>
+      )}
+
+      {showSequence && (
+        <Overlay onClose={() => setShowSequence(false)}>
+          <SequenceCheck
+            documents={documents}
+            counters={counters}
+            onClose={() => setShowSequence(false)}
+          />
+        </Overlay>
+      )}
+
+      {ledgerMonth && business && (
+        <Overlay onClose={() => setLedgerMonth(null)}>
+          <DocumentLedger
+            documents={documents}
+            business={business}
+            yearMonth={ledgerMonth}
+            onYearMonthChange={setLedgerMonth}
+            onClose={() => setLedgerMonth(null)}
+          />
         </Overlay>
       )}
 

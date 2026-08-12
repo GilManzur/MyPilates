@@ -5,6 +5,7 @@ import {
   counterKeyForDocumentType,
   documentTypeLabel,
   formatDocumentNumber,
+  findSequenceGaps,
   isVoidableDocumentType,
   lineItemsTotal,
   paymentMethodLabel,
@@ -136,6 +137,38 @@ describe('isVoidableDocumentType', () => {
     expect(isVoidableDocumentType('receipt')).toBe(false)
     expect(isVoidableDocumentType('cancellation')).toBe(false)
     expect(isVoidableDocumentType('refund')).toBe(false)
+  })
+})
+
+describe('findSequenceGaps', () => {
+  const counters = { documentNumber: 4, invoiceNumber: 2, demandNumber: 0 }
+
+  it('flags missing numbers per sequence and marks intact ones', () => {
+    // Legal sequence 1..4 is missing 2 and 3; invoices 1..2 intact.
+    const docs = [
+      { type: 'receipt' as const, number: 1 },
+      { type: 'refund' as const, number: 4 },
+      { type: 'invoice' as const, number: 1 },
+      { type: 'invoice' as const, number: 2 },
+    ]
+    const [legal, invoice, demand] = findSequenceGaps(docs, counters)
+    expect(legal.missing).toEqual([2, 3])
+    expect(invoice.missing).toEqual([])
+    expect(invoice.issuedCount).toBe(2)
+    expect(demand.last).toBe(0)
+    expect(demand.missing).toEqual([])
+  })
+
+  it('reports no gaps when every number is present', () => {
+    const docs = [
+      { type: 'receipt' as const, number: 1 },
+      { type: 'cancellation' as const, number: 2 },
+      { type: 'receipt' as const, number: 3 },
+      { type: 'receipt' as const, number: 4 },
+      { type: 'invoice' as const, number: 1 },
+      { type: 'invoice' as const, number: 2 },
+    ]
+    expect(findSequenceGaps(docs, counters).every((r) => r.missing.length === 0)).toBe(true)
   })
 })
 

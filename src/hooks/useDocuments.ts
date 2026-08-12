@@ -1,23 +1,36 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRepository } from '../lib/data'
-import type { DocumentDraft } from '../lib/data/types'
+import type { DocumentCounters, DocumentDraft } from '../lib/data/types'
 import type { FinancialDocument } from '../types'
 import { useAuth } from '../contexts/AuthContext'
+
+const EMPTY_COUNTERS: DocumentCounters = {
+  documentNumber: 0,
+  invoiceNumber: 0,
+  demandNumber: 0,
+}
 
 export function useDocuments() {
   const { user } = useAuth()
   const [documents, setDocuments] = useState<FinancialDocument[]>([])
+  const [counters, setCounters] = useState<DocumentCounters>(EMPTY_COUNTERS)
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
     if (!user) {
       setDocuments([])
+      setCounters(EMPTY_COUNTERS)
       setLoading(false)
       return
     }
     setLoading(true)
-    const list = await getRepository().listDocuments(user.uid)
+    const repo = getRepository()
+    const [list, nextCounters] = await Promise.all([
+      repo.listDocuments(user.uid),
+      repo.getDocumentCounters(user.uid),
+    ])
     setDocuments(list)
+    setCounters(nextCounters)
     setLoading(false)
   }, [user])
 
@@ -55,5 +68,5 @@ export function useDocuments() {
     return stamp
   }
 
-  return { documents, loading, refresh, issue, cancel, voidDoc, markPrinted }
+  return { documents, counters, loading, refresh, issue, cancel, voidDoc, markPrinted }
 }
