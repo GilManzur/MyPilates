@@ -150,6 +150,19 @@ describe('local document numbering', () => {
     expect(byId[receipt.id]).toBe('issued')
   })
 
+  it('stamps originalPrintedAt once and is idempotent thereafter', async () => {
+    const repo = createLocalRepository()
+    const receipt = await repo.issueDocument(uid, draft())
+    expect(receipt.originalPrintedAt).toBeUndefined()
+
+    const first = await repo.markOriginalPrinted(uid, receipt.id)
+    const second = await repo.markOriginalPrinted(uid, receipt.id)
+    expect(first).toBe(second)
+
+    const [stored] = await repo.listDocuments(uid)
+    expect(stored.originalPrintedAt).toBe(first)
+  })
+
   it('rejects setNextDocumentNumber that would go backwards', async () => {
     const repo = createLocalRepository()
     await repo.issueDocument(uid, draft())

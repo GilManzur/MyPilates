@@ -203,6 +203,19 @@ export function createFirebaseRepository(): DataRepository {
       // Void in place — the record is kept, never deleted (קובץ קבוע).
       await updateDoc(docRef, { status: 'cancelled' })
     },
+    async markOriginalPrinted(uid, documentId) {
+      const db = getDb()
+      const docRef = doc(db, 'users', uid, 'documents', documentId)
+      return runTransaction(db, async (tx) => {
+        const snap = await tx.get(docRef)
+        if (!snap.exists()) throw new Error('המסמך לא נמצא')
+        const existing = snap.data().originalPrintedAt as string | undefined
+        if (existing) return existing
+        const stamp = new Date().toISOString()
+        tx.update(docRef, { originalPrintedAt: stamp })
+        return stamp
+      })
+    },
     async getDocumentCounters(uid) {
       const db = getDb()
       const [legalSnap, invoiceSnap, demandSnap] = await Promise.all([

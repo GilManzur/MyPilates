@@ -31,11 +31,21 @@ service cloud.firestore {
       // invoice/demand is voided in place via the same status transition.
       match /documents/{id} {
         allow read, create: if isOwner();
-        allow update: if isOwner()
-          && resource.data.status == 'issued'
-          && request.resource.data.status == 'cancelled'
-          && request.resource.data.number == resource.data.number
-          && request.resource.data.type == resource.data.type;
+        // Two permitted updates only:
+        //  (a) void: issued -> cancelled, number & type unchanged.
+        //  (b) stamp originalPrintedAt exactly once, changing nothing else.
+        allow update: if isOwner() && (
+          (
+            resource.data.status == 'issued'
+            && request.resource.data.status == 'cancelled'
+            && request.resource.data.number == resource.data.number
+            && request.resource.data.type == resource.data.type
+          ) || (
+            resource.data.originalPrintedAt == null
+            && request.resource.data.originalPrintedAt is string
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['originalPrintedAt'])
+          )
+        );
         allow delete: if false;
       }
     }

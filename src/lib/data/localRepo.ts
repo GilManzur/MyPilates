@@ -217,6 +217,19 @@ export function createLocalRepository(): DataRepository {
       )
       writeStore(store)
     },
+    async markOriginalPrinted(uid, documentId) {
+      const store = readStore()
+      const existing = store.documents[uid] ?? []
+      const target = existing.find((item) => item.id === documentId)
+      if (!target) throw new Error('המסמך לא נמצא')
+      if (target.originalPrintedAt) return target.originalPrintedAt
+      const stamp = new Date().toISOString()
+      store.documents[uid] = existing.map((item) =>
+        item.id === documentId ? { ...item, originalPrintedAt: stamp } : item,
+      )
+      writeStore(store)
+      return stamp
+    },
     async getDocumentCounters(uid) {
       const counters = readStore().counters[uid]
       return {

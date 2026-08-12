@@ -57,6 +57,12 @@ export interface DataRepository {
    * other types (receipts are reversed via cancelDocument instead).
    */
   voidDocument(uid: string, documentId: string): Promise<void>
+  /**
+   * Stamps `originalPrintedAt` the first time the original is printed/shared.
+   * Idempotent: does nothing if already stamped. Returns the value in force
+   * (the existing one if already printed, else the newly written timestamp).
+   */
+  markOriginalPrinted(uid: string, documentId: string): Promise<string>
   /** Last assigned running numbers per sequence (0 if none). */
   getDocumentCounters(uid: string): Promise<DocumentCounters>
   /**

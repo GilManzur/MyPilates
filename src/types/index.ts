@@ -132,6 +132,12 @@ export interface FinancialDocument {
   /** Immutable snapshot of the business identity at issue time. */
   business: BusinessProfile
   createdAt: string
+  /**
+   * ISO timestamp of the first time the original ("מקור") was printed/shared.
+   * Written exactly once; afterwards every output is forced to "העתק"
+   * (הוראה 4.01, נספח ה׳ (א)(4): "מקור" on one copy only).
+   */
+  originalPrintedAt?: string
 }
 
 export interface StudioMonthSummary {

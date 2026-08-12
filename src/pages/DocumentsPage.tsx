@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
@@ -57,7 +57,7 @@ const emptyForm = {
 }
 
 export function DocumentsPage() {
-  const { documents, loading, issue, cancel, voidDoc } = useDocuments()
+  const { documents, loading, issue, cancel, voidDoc, markPrinted } = useDocuments()
   const { business } = useProfile()
   const { studios } = useStudios()
   const [open, setOpen] = useState(false)
@@ -72,25 +72,51 @@ export function DocumentsPage() {
   const [sharing, setSharing] = useState(false)
   const [shareNote, setShareNote] = useState('')
 
-  // Every freshly-opened document prints as the original ("מקור") first.
-  useEffect(() => {
-    setCopyMode(false)
+  // Opening a document that already produced its "מקור" defaults to "העתק".
+  const openViewer = (id: string) => {
+    const target = documents.find((doc) => doc.id === id)
+    setCopyMode(target?.originalPrintedAt != null)
     setShareNote('')
-  }, [viewerId])
+    setViewerId(id)
+  }
 
-  const printWith = (copy: boolean) => {
-    setCopyMode(copy)
+  const printWith = async (copy: boolean) => {
+    if (!viewed) return
+    if (!copy && !viewed.originalPrintedAt) {
+      // First output of the original — stamp it so every later print is "העתק".
+      await markPrinted(viewed.id)
+      setCopyMode(false)
+    } else {
+      setCopyMode(copy || viewed.originalPrintedAt != null)
+    }
     // Let React paint the correct מקור/העתק label before the print dialog opens.
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
   }
 
   const onShareWhatsApp = async () => {
+    if (!viewed) return
+    setSharing(true)
+    setShareNote('')
+    // Sharing delivers the document to the recipient: the first share produces
+    // the original ("מקור") and stamps it; later shares go out as "העתק".
+    if (!viewed.originalPrintedAt) {
+      await markPrinted(viewed.id)
+      setCopyMode(false)
+    } else {
+      setCopyMode(true)
+    }
+    // Repaint the מקור/העתק label before we grab the node (also lets the
+    // markPrinted refresh settle so React won't clobber the capture class).
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    )
     const node = document
       .getElementById('print-root')
       ?.querySelector('.doc-print') as HTMLElement | null
-    if (!node || !viewed) return
-    setSharing(true)
-    setShareNote('')
+    if (!node) {
+      setSharing(false)
+      return
+    }
     // Force the full page-width layout so the receipt is never clipped in the PDF.
     node.classList.add('doc-print--capture')
     try {
@@ -205,7 +231,7 @@ export function DocumentsPage() {
     try {
       const created = await issue(draft)
       setOpen(false)
-      if (created) setViewerId(created.id)
+      if (created) openViewer(created.id)
     } finally {
       setSaving(false)
     }
@@ -237,7 +263,7 @@ export function DocumentsPage() {
             note: `ביטול ${documentTypeLabel(doc.type)} מס׳ ${formatted}`,
           }
           const created = await cancel(doc.id, draft)
-          if (created) setViewerId(created.id)
+          if (created) openViewer(created.id)
         })()
       },
     })
@@ -282,7 +308,7 @@ export function DocumentsPage() {
             note: `החזר כספי בגין קבלה מס׳ ${formatted}`,
           }
           const created = await cancel(doc.id, draft)
-          if (created) setViewerId(created.id)
+          if (created) openViewer(created.id)
         })()
       },
     })
@@ -338,7 +364,7 @@ export function DocumentsPage() {
                     <IconButton
                       label="צפייה והדפסה"
                       icon="print"
-                      onClick={() => setViewerId(doc.id)}
+                      onClick={() => openViewer(doc.id)}
                     />
                     {canRefund && (
                       <IconButton
@@ -599,10 +625,14 @@ export function DocumentsPage() {
             <Button variant="secondary" onClick={() => setViewerId(null)}>
               סגירה
             </Button>
-            <Button variant="secondary" onClick={() => printWith(true)}>
-              הדפסת עותק
+            {!viewed.originalPrintedAt && (
+              <Button variant="secondary" onClick={() => void printWith(true)}>
+                הדפסת עותק
+              </Button>
+            )}
+            <Button onClick={() => void printWith(false)}>
+              {viewed.originalPrintedAt ? 'הדפסת העתק / PDF' : 'הדפסה / שמירה כ‑PDF'}
             </Button>
-            <Button onClick={() => printWith(false)}>הדפסה / שמירה כ‑PDF</Button>
             <Button
               className="btn--whatsapp"
               onClick={() => void onShareWhatsApp()}

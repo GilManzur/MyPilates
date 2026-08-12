@@ -47,5 +47,13 @@ export function useDocuments() {
     await refresh()
   }
 
-  return { documents, loading, refresh, issue, cancel, voidDoc }
+  /** Stamps the first-original-print timestamp (idempotent); returns it. */
+  const markPrinted = async (documentId: string) => {
+    if (!user) return undefined
+    const stamp = await getRepository().markOriginalPrinted(user.uid, documentId)
+    await refresh()
+    return stamp
+  }
+
+  return { documents, loading, refresh, issue, cancel, voidDoc, markPrinted }
 }
