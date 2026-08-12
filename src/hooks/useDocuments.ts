@@ -3,6 +3,7 @@ import { getRepository } from '../lib/data'
 import type { DocumentCounters, DocumentDraft } from '../lib/data/types'
 import type { FinancialDocument } from '../types'
 import { useAuth } from '../contexts/AuthContext'
+import { archiveReceiptDocument } from '../lib/share/archiveReceipt'
 
 const EMPTY_COUNTERS: DocumentCounters = {
   documentNumber: 0,
@@ -42,6 +43,8 @@ export function useDocuments() {
     if (!user) return undefined
     const issued = await getRepository().issueDocument(user.uid, draft)
     await refresh()
+    // Back up every issued receipt to Drive/Sheets (no-op if not configured).
+    if (issued.type === 'receipt') void archiveReceiptDocument(issued)
     return issued
   }
 

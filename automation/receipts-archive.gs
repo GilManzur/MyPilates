@@ -25,6 +25,21 @@
  * Re-deploy (Manage deployments → Edit → new version) after editing this code.
  */
 
+/**
+ * Connectivity test. Open the Web app URL in a browser (or add ?token=YOURTOKEN)
+ * to confirm the deployment is reachable and configured.
+ */
+function doGet(e) {
+  const props = PropertiesService.getScriptProperties()
+  const configured =
+    !!props.getProperty('ROOT_FOLDER_ID') &&
+    !!props.getProperty('LEDGER_SHEET_ID') &&
+    !!props.getProperty('ARCHIVE_TOKEN')
+  const tokenOk =
+    e && e.parameter && e.parameter.token === props.getProperty('ARCHIVE_TOKEN')
+  return jsonOut({ ok: true, service: 'receipts-archive', configured, tokenOk })
+}
+
 function doPost(e) {
   try {
     const props = PropertiesService.getScriptProperties()
