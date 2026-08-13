@@ -1059,8 +1059,7 @@ h2 {
   box-shadow: inset 0 0 0 2px var(--brand);
 }
 
-/* Per-lesson colour dots — the glanceable indicator on phones, where the text
-   chips are too narrow to read. Chips take over once there's room. */
+/* One colour dot per lesson hour — glanceable load on phones. */
 .month-calendar__dots {
   display: flex;
   flex-wrap: wrap;
