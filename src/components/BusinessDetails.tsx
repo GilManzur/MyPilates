@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from './Button'
+import { Collapsible } from './Collapsible'
 import { Field, TextInput } from './Field'
 import { useProfile } from '../hooks/useProfile'
 import type { BusinessProfile } from '../types'
@@ -44,8 +45,7 @@ export function BusinessDetails() {
   }
 
   return (
-    <section id="business" className="panel stack-sm">
-      <h2>פרטי העסק</h2>
+    <Collapsible id="business" title="פרטי העסק">
       <p className="hint">
         הפרטים מופיעים על כל קבלה, חשבונית עסקה ודרישת תשלום שתפיקי. חובה למלא שם ומספר עוסק פטור /
         ת״ז לפני הפקת מסמכים.
@@ -109,6 +109,6 @@ export function BusinessDetails() {
           {saved && <p className="toast">פרטי העסק נשמרו</p>}
         </form>
       )}
-    </section>
+    </Collapsible>
   )
 }

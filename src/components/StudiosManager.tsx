@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from './Button'
+import { Collapsible } from './Collapsible'
 import { IconButton } from './IconButton'
 import { Field, TextInput } from './Field'
 import { Overlay } from './Overlay'
@@ -84,12 +85,9 @@ export function StudiosManager() {
   }
 
   return (
-    <section id="studios" className="panel stack-sm">
-      <div className="panel__head">
-        <h2>ניהול סטודיוים</h2>
-        <Button onClick={openCreate}>סטודיו חדש</Button>
-      </div>
+    <Collapsible id="studios" title="ניהול סטודיוים" defaultOpen>
       <p className="hint">שם, תעריף שעתי וצבע לזיהוי ביומן החודשי.</p>
+      <Button onClick={openCreate}>סטודיו חדש</Button>
 
       {loading ? (
         <p className="empty">טוען…</p>
@@ -264,6 +262,6 @@ export function StudiosManager() {
       )}
 
       <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
-    </section>
+    </Collapsible>
   )
 }

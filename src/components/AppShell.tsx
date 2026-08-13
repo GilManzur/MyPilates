@@ -1,5 +1,4 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { Logo } from './Logo'
 import { Icon, type IconName } from './Icon'
 
@@ -12,18 +11,13 @@ const links: { to: string; label: string; icon: IconName }[] = [
 ]
 
 export function AppShell() {
-  const { user } = useAuth()
-
   return (
     <div className="app-shell">
       <header className="top-bar">
-        <div className="top-bar__brand">
-          <Logo size={40} />
-          <div>
-            <p className="brand-name">MyPilates</p>
-            <p className="brand-sub">{user?.displayName}</p>
-          </div>
-        </div>
+        <NavLink to="/" className="top-bar__brand" aria-label="בית">
+          <Logo size={32} />
+          <p className="brand-name">MyPilates</p>
+        </NavLink>
         <NavLink to="/settings" className="icon-btn" aria-label="הגדרות">
           <Icon name="settings" size={22} />
         </NavLink>

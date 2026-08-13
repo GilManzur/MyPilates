@@ -115,6 +115,88 @@ export function PaymentsPage() {
     })
   }
 
+  /** Per-studio view model shared by the mobile cards and the desktop table. */
+  const rows = useMemo(
+    () =>
+      summaries.map((summary) => {
+        const activeType: DocumentType =
+          summary.paymentStatus === 'confirmed' ? 'receipt' : 'invoice'
+        const remaining = remainingSummaryFor(summary, activeType)
+        const remainingAmount = remaining?.amount ?? 0
+        const coveredAmount = Math.round((summary.amount - remainingAmount) * 100) / 100
+        return {
+          summary,
+          activeType,
+          remainingAmount,
+          coveredAmount,
+          confirmed: summary.paymentStatus === 'confirmed',
+        }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [summaries, documents, entries, studios, payments, yearMonth],
+  )
+
+  type Row = (typeof rows)[number]
+
+  const detailContent = ({ summary, activeType, coveredAmount, remainingAmount }: Row) => (
+    <>
+      <span className="pay-row__hours">
+        {summary.regularHours > 0
+          ? `${summary.regularHours} שעות × ${formatILS(summary.hourlyRate)}`
+          : ''}
+        {summary.swapAmount > 0
+          ? `${summary.regularHours > 0 ? ' · ' : ''}${summary.swapHours} החלפות × ${formatILS(summary.swapPay)}`
+          : ''}
+        {summary.travelAmount > 0
+          ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
+          : ''}
+      </span>
+      {coveredAmount > 0 && activeType === 'receipt' && (
+        <span className="pay-row__covered">
+          כבר התקבל: {formatILS(coveredAmount)}
+          {remainingAmount > 0 ? ` · נותר: ${formatILS(remainingAmount)}` : ' · הכול התקבל'}
+        </span>
+      )}
+    </>
+  )
+
+  const actionButtons = ({ summary, confirmed, coveredAmount, remainingAmount }: Row) => (
+    <>
+      {confirmed ? (
+        <IconButton
+          label="בטלי אישור תשלום"
+          icon="x"
+          variant="secondary"
+          onClick={() => void unconfirmPayment(summary.studioId, summary.amount)}
+        />
+      ) : (
+        <IconButton
+          label="אישור שקיבלתי תשלום"
+          icon="check"
+          variant="primary"
+          onClick={() => void confirmPayment(summary.studioId, summary.amount)}
+          disabled={summary.amount <= 0}
+        />
+      )}
+      {confirmed ? (
+        <IconButton
+          label={coveredAmount > 0 ? 'הפק קבלה על היתרה' : 'הפק קבלה'}
+          icon="moneyIn"
+          variant="primary"
+          disabled={!business || remainingAmount <= 0}
+          onClick={() => void issueRemaining(summary, 'receipt')}
+        />
+      ) : (
+        <IconButton
+          label={coveredAmount > 0 ? 'הפק חשבונית על היתרה' : 'הפק חשבונית עסקה'}
+          icon="document"
+          disabled={!business || remainingAmount <= 0}
+          onClick={() => void issueRemaining(summary, 'invoice')}
+        />
+      )}
+    </>
+  )
+
   return (
     <div className="stack app-desk-pay">
       <div className="page-head">
@@ -142,103 +224,73 @@ export function PaymentsPage() {
       ) : summaries.length === 0 ? (
         <p className="empty panel">אין סטודיוים עם שעות בחודש זה — אין מה לכלול בתשלום.</p>
       ) : (
-        <div className="panel pay-table-wrap">
-          <table className="pay-table">
-            <thead>
-              <tr>
-                <th>סטודיו</th>
-                <th>פירוט</th>
-                <th className="pay-table__num">סכום</th>
-                <th>סטטוס</th>
-                <th className="pay-table__act">פעולות</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summaries.map((summary) => {
-                const activeType: DocumentType =
-                  summary.paymentStatus === 'confirmed' ? 'receipt' : 'invoice'
-                const remaining = remainingSummaryFor(summary, activeType)
-                const remainingAmount = remaining?.amount ?? 0
-                const coveredAmount = Math.round((summary.amount - remainingAmount) * 100) / 100
-                const confirmed = summary.paymentStatus === 'confirmed'
-                return (
-                  <tr key={summary.studioId} className="pay-row">
+        <>
+          {/* Mobile: one stacked card per studio — the status toggle stays in
+              reach without any horizontal scroll. */}
+          <div className="pay-cards">
+            {rows.map((row) => (
+              <article key={row.summary.studioId} className="panel pay-card">
+                <div className="pay-card__head">
+                  <span className="pay-row__studio">
+                    <span
+                      className="color-dot"
+                      style={{ background: studioColor(row.summary.studioId) }}
+                    />
+                    <span className="pay-row__name">{row.summary.studioName}</span>
+                  </span>
+                  <span
+                    className={`badge ${row.confirmed ? 'badge--confirmed' : 'badge--pending'}`}
+                  >
+                    {row.confirmed ? 'שולם' : 'ממתין'}
+                  </span>
+                </div>
+                <div className="pay-card__body">
+                  <span className="pay-card__detail">{detailContent(row)}</span>
+                  <span className="pay-card__amount">{formatILS(row.summary.amount)}</span>
+                </div>
+                <div className="pay-card__actions">{actionButtons(row)}</div>
+              </article>
+            ))}
+          </div>
+
+          {/* Tablet / desktop: the dense table view. */}
+          <div className="panel pay-table-wrap">
+            <table className="pay-table">
+              <thead>
+                <tr>
+                  <th>סטודיו</th>
+                  <th>פירוט</th>
+                  <th className="pay-table__num">סכום</th>
+                  <th>סטטוס</th>
+                  <th className="pay-table__act">פעולות</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.summary.studioId} className="pay-row">
                     <td className="pay-row__studio">
                       <span
                         className="color-dot"
-                        style={{ background: studioColor(summary.studioId) }}
+                        style={{ background: studioColor(row.summary.studioId) }}
                       />
-                      <span className="pay-row__name">{summary.studioName}</span>
+                      <span className="pay-row__name">{row.summary.studioName}</span>
                     </td>
-                    <td className="pay-row__detail">
-                      <span className="pay-row__hours">
-                        {summary.regularHours > 0
-                          ? `${summary.regularHours} שעות × ${formatILS(summary.hourlyRate)}`
-                          : ''}
-                        {summary.swapAmount > 0
-                          ? `${summary.regularHours > 0 ? ' · ' : ''}${summary.swapHours} החלפות × ${formatILS(summary.swapPay)}`
-                          : ''}
-                        {summary.travelAmount > 0
-                          ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
-                          : ''}
-                      </span>
-                      {coveredAmount > 0 && activeType === 'receipt' && (
-                        <span className="pay-row__covered">
-                          כבר התקבל: {formatILS(coveredAmount)}
-                          {remainingAmount > 0
-                            ? ` · נותר: ${formatILS(remainingAmount)}`
-                            : ' · הכול התקבל'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="pay-row__amount">{formatILS(summary.amount)}</td>
+                    <td className="pay-row__detail">{detailContent(row)}</td>
+                    <td className="pay-row__amount">{formatILS(row.summary.amount)}</td>
                     <td>
-                      <span className={`badge ${confirmed ? 'badge--confirmed' : 'badge--pending'}`}>
-                        {confirmed ? 'שולם' : 'ממתין'}
+                      <span
+                        className={`badge ${row.confirmed ? 'badge--confirmed' : 'badge--pending'}`}
+                      >
+                        {row.confirmed ? 'שולם' : 'ממתין'}
                       </span>
                     </td>
-                    <td className="pay-row__actions">
-                      {confirmed ? (
-                        <IconButton
-                          label="בטלי אישור תשלום"
-                          icon="x"
-                          variant="secondary"
-                          onClick={() =>
-                            void unconfirmPayment(summary.studioId, summary.amount)
-                          }
-                        />
-                      ) : (
-                        <IconButton
-                          label="אישור שקיבלתי תשלום"
-                          icon="check"
-                          variant="primary"
-                          onClick={() => void confirmPayment(summary.studioId, summary.amount)}
-                          disabled={summary.amount <= 0}
-                        />
-                      )}
-                      {confirmed ? (
-                        <IconButton
-                          label={coveredAmount > 0 ? 'הפק קבלה על היתרה' : 'הפק קבלה'}
-                          icon="moneyIn"
-                          variant="primary"
-                          disabled={!business || remainingAmount <= 0}
-                          onClick={() => void issueRemaining(summary, 'receipt')}
-                        />
-                      ) : (
-                        <IconButton
-                          label={coveredAmount > 0 ? 'הפק חשבונית על היתרה' : 'הפק חשבונית עסקה'}
-                          icon="document"
-                          disabled={!business || remainingAmount <= 0}
-                          onClick={() => void issueRemaining(summary, 'invoice')}
-                        />
-                      )}
-                    </td>
+                    <td className="pay-row__actions">{actionButtons(row)}</td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       {!business && summaries.length > 0 && (
         <p className="hint">

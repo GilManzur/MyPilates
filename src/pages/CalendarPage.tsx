@@ -11,6 +11,7 @@ import { useLessons } from '../hooks/useLessons'
 import { currentYearMonth, formatILS } from '../lib/money/calculations'
 import { formatShortDate, fromLocalDateAndTime, localDateKey, localTimeFromIso } from '../lib/dates'
 import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
+import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import type { Lesson } from '../types'
 
 const emptyForm = {
@@ -35,7 +36,15 @@ export function CalendarPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+
+  const dayLessons = useMemo(() => {
+    if (!selectedDate) return []
+    return lessons
+      .filter((lesson) => lesson.status !== 'cancelled' && localDateKey(lesson.startAt) === selectedDate)
+      .sort((a, b) => a.startAt.localeCompare(b.startAt))
+  }, [lessons, selectedDate])
 
   const weeklyCount = useMemo(() => {
     if (!form.weekly || !form.date || !form.startTime || !form.endTime || !form.untilDate) return 0
@@ -181,12 +190,67 @@ export function CalendarPage() {
           lessons={lessons}
           studios={studios}
           pickingDay={pickingDay}
+          selectedDate={selectedDate ?? undefined}
           onLessonClick={(lesson) => {
             setPickingDay(false)
             openEdit(lesson)
           }}
           onDayClick={pickingDay ? openCreateOnDate : undefined}
+          onDaySelect={(date) => setSelectedDate((prev) => (prev === date ? null : date))}
         />
+      )}
+
+      {selectedDate && !pickingDay && (
+        <section className="panel day-agenda">
+          <div className="panel__head">
+            <h2>{formatShortDate(selectedDate)}</h2>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => setSelectedDate(null)}
+            >
+              סגירה
+            </button>
+          </div>
+          {dayLessons.length === 0 ? (
+            <p className="empty">אין שיעורים ביום זה.</p>
+          ) : (
+            <ul className="list">
+              {dayLessons.map((lesson) => {
+                const studio = studios.find((item) => item.id === lesson.studioId)
+                return (
+                  <li key={lesson.id} className="list-item list-item--action">
+                    <button
+                      type="button"
+                      className="list-item__main day-agenda__item"
+                      onClick={() => {
+                        setPickingDay(false)
+                        openEdit(lesson)
+                      }}
+                    >
+                      <span
+                        className="color-dot"
+                        style={{ background: studio?.color ?? DEFAULT_STUDIO_COLOR }}
+                      />
+                      <span className="list-item__text">
+                        <span className="list-item__title">{studio?.name ?? 'סטודיו'}</span>
+                        <span className="list-item__meta">
+                          {localTimeFromIso(lesson.startAt)}–{localTimeFromIso(lesson.endAt)}
+                          {lesson.title ? ` · ${lesson.title}` : ''}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          {studios.length > 0 && (
+            <Button variant="secondary" onClick={() => openCreateOnDate(selectedDate)}>
+              הוספת שיעור ביום זה
+            </Button>
+          )}
+        </section>
       )}
 
       {open && (

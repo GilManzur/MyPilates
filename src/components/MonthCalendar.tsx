@@ -18,6 +18,9 @@ type Props = {
   studios: Studio[]
   onLessonClick: (lesson: Lesson) => void
   onDayClick?: (date: string) => void
+  /** Selecting a day outside picking mode (opens the day agenda on mobile). */
+  onDaySelect?: (date: string) => void
+  selectedDate?: string
   pickingDay?: boolean
 }
 
@@ -27,6 +30,8 @@ export function MonthCalendar({
   studios,
   onLessonClick,
   onDayClick,
+  onDaySelect,
+  selectedDate,
   pickingDay = false,
 }: Props) {
   const studioMap = useMemo(
@@ -72,27 +77,47 @@ export function MonthCalendar({
           const dayLessons = lessonsByDate[cell.date] ?? []
           const dayNum = Number(cell.date.slice(8, 10))
           const isToday = cell.date === today
+          const isSelected = cell.date === selectedDate
           const isExpandedWeek = expandedWeekDates.has(cell.date)
           const visibleLessons = isExpandedWeek ? dayLessons : dayLessons.slice(0, 3)
           const hiddenCount = isExpandedWeek ? 0 : Math.max(0, dayLessons.length - 3)
+          const dotLessons = dayLessons.slice(0, 4)
+          const dotHidden = Math.max(0, dayLessons.length - dotLessons.length)
           const studioName = (studioId: string) => studioMap[studioId]?.name ?? 'סטודיו'
 
           return (
             <div
               key={cell.date}
-              className={`month-calendar__cell${cell.inMonth ? '' : ' is-outside'}${isToday ? ' is-today' : ''}${isExpandedWeek ? ' is-expanded-week' : ''}`}
+              className={`month-calendar__cell${cell.inMonth ? '' : ' is-outside'}${isToday ? ' is-today' : ''}${isSelected ? ' is-selected' : ''}${isExpandedWeek ? ' is-expanded-week' : ''}`}
             >
               <button
                 type="button"
                 className="month-calendar__day-btn"
                 onClick={() => {
-                  if (!pickingDay || !onDayClick) return
-                  onDayClick(cell.date)
+                  if (pickingDay) {
+                    onDayClick?.(cell.date)
+                    return
+                  }
+                  onDaySelect?.(cell.date)
                 }}
-                aria-label={pickingDay ? `בחרי יום ${dayNum}` : `יום ${dayNum}`}
+                aria-label={pickingDay ? `בחרי יום ${dayNum}` : `יום ${dayNum} · ${dayLessons.length} שיעורים`}
               >
                 <span className="month-calendar__day-num">{dayNum}</span>
               </button>
+              {dayLessons.length > 0 && (
+                <div className="month-calendar__dots" aria-hidden="true">
+                  {dotLessons.map((lesson) => (
+                    <span
+                      key={lesson.id}
+                      className="month-calendar__dot"
+                      style={{
+                        background: studioMap[lesson.studioId]?.color ?? DEFAULT_STUDIO_COLOR,
+                      }}
+                    />
+                  ))}
+                  {dotHidden > 0 && <span className="month-calendar__dots-more">+{dotHidden}</span>}
+                </div>
+              )}
               <div className="month-calendar__events">
                 {visibleLessons.map((lesson) => {
                   const color = studioMap[lesson.studioId]?.color ?? DEFAULT_STUDIO_COLOR

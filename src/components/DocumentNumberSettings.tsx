@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from './Button'
+import { Collapsible } from './Collapsible'
 import { Field, TextInput } from './Field'
 import { useAuth } from '../contexts/AuthContext'
 import { getRepository } from '../lib/data'
@@ -84,8 +85,7 @@ export function DocumentNumberSettings() {
   }
 
   return (
-    <section id="document-number" className="panel stack-sm">
-      <h2>מספור מסמכים</h2>
+    <Collapsible id="document-number" title="מספור מסמכים">
       <p className="hint">
         לכל סוג יש מונה משלו: קבלות/ביטולים/החזרים (מספר רגיל), חשבוניות עסקה
         ({formatDocumentNumber('invoice', 1)}), ודרישות תשלום (
@@ -160,6 +160,6 @@ export function DocumentNumberSettings() {
           </form>
         </div>
       )}
-    </section>
+    </Collapsible>
   )
 }

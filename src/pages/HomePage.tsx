@@ -12,10 +12,13 @@ import {
   pendingAmount,
   totalAmount,
 } from '../lib/money/calculations'
-import { formatLessonTime } from '../lib/dates'
+import { formatLessonTime, formatMonthTitle } from '../lib/dates'
 import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
+import { useAuth } from '../contexts/AuthContext'
 
 export function HomePage() {
+  const { user } = useAuth()
+  const firstName = user?.displayName?.trim().split(/\s+/)[0] ?? ''
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
   const { studios, loading: studiosLoading } = useStudios()
   const { lessons, loading: lessonsLoading } = useLessons(yearMonth)
@@ -38,8 +41,8 @@ export function HomePage() {
   return (
     <div className="stack app-desk-dash">
       <section className="hero-panel reveal">
-        <p className="eyebrow">החודש שלך</p>
-        <h1 className="hero-title">MyPilates</h1>
+        <p className="eyebrow">{firstName ? `שלום, ${firstName}` : 'החודש שלך'}</p>
+        <h1 className="hero-title">{formatMonthTitle(yearMonth)}</h1>
         <p className="hero-copy">סיכום שעות, שיעורים ותשלומים במקום אחד.</p>
         <div className="hero-stats">
           <div>

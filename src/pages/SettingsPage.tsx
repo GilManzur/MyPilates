@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
+import { Collapsible } from '../components/Collapsible'
 import { Logo } from '../components/Logo'
 import { BusinessDetails } from '../components/BusinessDetails'
 import { DocumentNumberSettings } from '../components/DocumentNumberSettings'
@@ -75,15 +76,14 @@ export function SettingsPage() {
 
       <StudiosManager />
 
-      <section className="panel stack-sm">
-        <h2>נוטיפיקציות</h2>
+      <Collapsible title="נוטיפיקציות">
         <p className="hint">
           תזכורת כ־45 דקות לפני שיעור, ותזכורת בסוף החודש לוודא שקיבלת תשלום.
           באייפון יש להוסיף את האפליקציה למסך הבית ולהפעיל הרשאות.
         </p>
         <Button onClick={() => void onEnableNotifications()}>הפעלת תזכורות</Button>
         {status && <p className="toast">{status}</p>}
-      </section>
+      </Collapsible>
 
       {installHint && (
         <section className="panel">

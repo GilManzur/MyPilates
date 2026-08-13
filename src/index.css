@@ -86,13 +86,15 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .top-bar__brand {
   display: flex;
-  gap: 10px;
+  gap: 9px;
   align-items: center;
+  text-decoration: none;
+  color: inherit;
 }
 
 .brand-logo {
@@ -116,7 +118,8 @@ h2 {
 
 .brand-name {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   line-height: 1.1;
 }
 
@@ -173,16 +176,28 @@ h2 {
   gap: 10px;
 }
 
+/* Mobile-first: stack the title above the action cluster so the heading always
+   gets the full width. A crowded action row (e.g. Documents' three buttons)
+   otherwise crushes the title column to ~0 and wraps it letter-per-line. */
 .page-head {
   display: flex;
-  align-items: end;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 12px;
 }
 
 .page-head > div {
   min-width: 0;
   flex: 1;
+}
+
+/* Once there's room, sit the title and actions side by side again. */
+@media (min-width: 600px) {
+  .page-head {
+    flex-direction: row;
+    align-items: end;
+    justify-content: space-between;
+  }
 }
 
 .page-head h1 {
@@ -214,6 +229,44 @@ h2 {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+/* Collapsible settings section (native <details>). */
+.collapsible {
+  padding: 0;
+}
+.collapsible__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 48px;
+}
+.collapsible__summary::-webkit-details-marker {
+  display: none;
+}
+.collapsible__summary h2 {
+  margin: 0;
+}
+.collapsible__chevron {
+  color: var(--ink-soft);
+  transition: transform 200ms ease;
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+.collapsible[open] .collapsible__chevron {
+  transform: rotate(180deg);
+}
+.collapsible__body {
+  padding: 0 16px 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .collapsible__chevron {
+    transition: none;
+  }
 }
 
 .hero-panel {
@@ -1002,6 +1055,75 @@ h2 {
   color: var(--ink-soft);
 }
 
+.month-calendar__cell.is-selected {
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+/* Per-lesson colour dots — the glanceable indicator on phones, where the text
+   chips are too narrow to read. Chips take over once there's room. */
+.month-calendar__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding-inline-start: 2px;
+}
+.month-calendar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.month-calendar__dots-more {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* Mobile: dots only. */
+.month-calendar__events {
+  display: none;
+}
+/* Crowded-week expansion only helps the text chips — keep cells uniform on phones. */
+.month-calendar__cell.is-expanded-week {
+  min-height: 78px;
+}
+@media (min-width: 481px) {
+  .month-calendar__dots {
+    display: none;
+  }
+  .month-calendar__events {
+    display: grid;
+  }
+  .month-calendar__cell.is-expanded-week {
+    min-height: 120px;
+  }
+}
+
+/* Day agenda (opens when a day is tapped on mobile). */
+.day-agenda {
+  display: grid;
+  gap: 12px;
+}
+.day-agenda__item {
+  cursor: pointer;
+  width: 100%;
+}
+.list-item__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.link-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+}
+
 @media (max-width: 380px) {
   .month-calendar__cell {
     min-height: 68px;
@@ -1446,7 +1568,13 @@ h2 {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  justify-content: flex-end;
+  /* Stacked under the title on mobile — align to the reading start. */
+  justify-content: flex-start;
+}
+@media (min-width: 600px) {
+  .page-head__actions {
+    justify-content: flex-end;
+  }
 }
 /* Keep the action cluster from stretching like the title column. */
 .page-head > .page-head__actions {
@@ -1723,6 +1851,58 @@ h2 {
 .pay-row__actions > * {
   display: inline-flex;
   gap: 6px;
+}
+
+/* ---- Payments: stacked cards (mobile) ---- */
+.pay-cards {
+  display: grid;
+  gap: 12px;
+}
+.pay-card {
+  display: grid;
+  gap: 12px;
+}
+.pay-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pay-card__body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pay-card__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.pay-card__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.15rem;
+  white-space: nowrap;
+}
+.pay-card__actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+/* Table is the tablet/desktop view; cards are the phone view. */
+.pay-table-wrap {
+  display: none;
+}
+@media (min-width: 720px) {
+  .pay-cards {
+    display: none;
+  }
+  .pay-table-wrap {
+    display: block;
+  }
 }
 
 /* ---- Studios manager — card grid ---- */
