@@ -21,6 +21,7 @@ import type {
   Studio,
   UserProfile,
 } from '../../types'
+import { localDateKey } from '../dates'
 import { counterKeyForDocumentType, isVoidableDocumentType } from '../documents'
 import type { DataRepository, SeedableDocumentCounter } from './types'
 import { createId } from './types'
@@ -76,18 +77,20 @@ export function createFirebaseRepository(): DataRepository {
       await deleteDoc(doc(getDb(), 'users', uid, 'studios', studioId))
     },
     async listLessons(uid, yearMonth) {
-      const start = `${yearMonth}-01T00:00:00.000Z`
       const [y, m] = yearMonth.split('-').map(Number)
       const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
-      const end = `${nextMonth}-01T00:00:00.000Z`
+      const startMs = Date.parse(`${yearMonth}-01T00:00:00.000Z`) - 24 * 60 * 60 * 1000
+      const endMs = Date.parse(`${nextMonth}-01T00:00:00.000Z`) + 24 * 60 * 60 * 1000
       const q = query(
         col(uid, 'lessons'),
-        where('startAt', '>=', start),
-        where('startAt', '<', end),
+        where('startAt', '>=', new Date(startMs).toISOString()),
+        where('startAt', '<', new Date(endMs).toISOString()),
         orderBy('startAt', 'asc'),
       )
       const snap = await getDocs(q)
-      return snap.docs.map((item) => ({ id: item.id, ...item.data() }) as Lesson)
+      return snap.docs
+        .map((item) => ({ id: item.id, ...item.data() }) as Lesson)
+        .filter((lesson) => localDateKey(lesson.startAt).startsWith(yearMonth))
     },
     async upsertLesson(uid, lesson) {
       const { id, ...data } = lesson

@@ -12,6 +12,7 @@ import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { elementToPdfBlob, shareDocumentPdf, type ShareChannel } from '../lib/share/documentPdf'
 import { useDocuments } from '../hooks/useDocuments'
 import { useAuth } from '../contexts/AuthContext'
+import { useViewMonth } from '../contexts/ViewMonthContext'
 import { getRepository } from '../lib/data'
 import { useProfile } from '../hooks/useProfile'
 import { useStudios } from '../hooks/useStudios'
@@ -24,7 +25,7 @@ import {
   paymentMethodLabel,
   PAYMENT_BEARING_TYPES,
 } from '../lib/documents'
-import { formatILSExact, currentYearMonth } from '../lib/money/calculations'
+import { formatILSExact } from '../lib/money/calculations'
 import { formatShortDate, formatMonthTitle } from '../lib/dates'
 import type {
   DocumentLineItem,
@@ -71,6 +72,7 @@ export function DocumentsPage() {
   const { user } = useAuth()
   const { business } = useProfile()
   const { studios } = useStudios()
+  const { yearMonth, setYearMonth } = useViewMonth()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
@@ -78,7 +80,7 @@ export function DocumentsPage() {
   const [viewerId, setViewerId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [showSequence, setShowSequence] = useState(false)
-  const [ledgerMonth, setLedgerMonth] = useState<string | null>(null)
+  const [ledgerOpen, setLedgerOpen] = useState(false)
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null)
   // Lazily-loaded performed lessons per expanded document ('loading' while fetching).
   const [detailByDoc, setDetailByDoc] = useState<Record<string, DocDetail | 'loading'>>({})
@@ -198,7 +200,9 @@ export function DocumentsPage() {
                 <div key={entry.id} className="doc-detail__row doc-detail__row--lesson">
                   <span>
                     {formatShortDate(entry.date)} ·{' '}
-                    {entry.lessonId ? (lessonById.get(entry.lessonId)?.title ?? 'שיעור') : 'שעות ידניות'}
+                    {entry.lessonId
+                      ? (lessonById.get(entry.lessonId)?.title ?? entry.note ?? 'שיעור')
+                      : (entry.note || 'שעות ידניות')}
                     {entry.isSwap && ' · החלפה'}
                   </span>
                   <span>{entry.hours} שע׳</span>
@@ -497,7 +501,7 @@ export function DocumentsPage() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => setLedgerMonth(currentYearMonth())}
+            onClick={() => setLedgerOpen(true)}
             disabled={!business}
           >
             ריכוז חודשי
@@ -930,14 +934,14 @@ export function DocumentsPage() {
         </Overlay>
       )}
 
-      {ledgerMonth && business && (
-        <Overlay onClose={() => setLedgerMonth(null)}>
+      {ledgerOpen && business && (
+        <Overlay onClose={() => setLedgerOpen(false)}>
           <DocumentLedger
             documents={documents}
             business={business}
-            yearMonth={ledgerMonth}
-            onYearMonthChange={setLedgerMonth}
-            onClose={() => setLedgerMonth(null)}
+            yearMonth={yearMonth}
+            onYearMonthChange={setYearMonth}
+            onClose={() => setLedgerOpen(false)}
           />
         </Overlay>
       )}

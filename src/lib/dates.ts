@@ -86,6 +86,13 @@ export function todayLocalKey(date = new Date()): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+/** Today if it falls in yearMonth; otherwise the 1st of that month. */
+export function defaultDateInMonth(yearMonth: string, date = new Date()): string {
+  const today = todayLocalKey(date)
+  if (today.startsWith(yearMonth)) return today
+  return `${yearMonth}-01`
+}
+
 export function formatLessonClock(iso: string): string {
   return format(parseISO(iso), 'HH:mm')
 }

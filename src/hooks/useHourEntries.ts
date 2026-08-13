@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRepository } from '../lib/data'
 import { createId } from '../lib/data/types'
-import { dateOnly } from '../lib/dates'
+import { dateOnly, localDateKey } from '../lib/dates'
 import { hoursFromLesson } from '../lib/money/calculations'
 import type { HourEntry, Lesson } from '../types'
 import { useAuth } from '../contexts/AuthContext'
@@ -32,6 +32,7 @@ export function useHourEntries(yearMonth: string) {
     date: string
     hours: number
     note?: string
+    isSwap?: boolean
   }) => {
     if (!user) return
     const entry: HourEntry = {
@@ -42,6 +43,7 @@ export function useHourEntries(yearMonth: string) {
       source: 'manual',
       note: input.note,
       createdAt: new Date().toISOString(),
+      ...(input.isSwap ? { isSwap: true } : {}),
     }
     await getRepository().upsertHourEntry(user.uid, entry)
     await refresh()
@@ -53,7 +55,7 @@ export function useHourEntries(yearMonth: string) {
     const entry: HourEntry = {
       id: createId('hour'),
       studioId: lesson.studioId,
-      date: dateOnly(lesson.startAt),
+      date: localDateKey(lesson.startAt),
       hours,
       source: 'lesson',
       lessonId: lesson.id,

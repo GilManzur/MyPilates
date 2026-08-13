@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useStudios } from '../hooks/useStudios'
@@ -7,7 +7,6 @@ import { useHourEntries } from '../hooks/useHourEntries'
 import { usePayments } from '../hooks/usePayments'
 import {
   buildMonthSummaries,
-  currentYearMonth,
   formatILS,
   pendingAmount,
   totalAmount,
@@ -15,11 +14,12 @@ import {
 import { formatLessonTime, formatMonthTitle } from '../lib/dates'
 import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import { useAuth } from '../contexts/AuthContext'
+import { useViewMonth } from '../contexts/ViewMonthContext'
 
 export function HomePage() {
   const { user } = useAuth()
   const firstName = user?.displayName?.trim().split(/\s+/)[0] ?? ''
-  const [yearMonth, setYearMonth] = useState(currentYearMonth())
+  const { yearMonth, setYearMonth } = useViewMonth()
   const { studios, loading: studiosLoading } = useStudios()
   const { lessons, loading: lessonsLoading } = useLessons(yearMonth)
   const { entries, loading: entriesLoading } = useHourEntries(yearMonth)

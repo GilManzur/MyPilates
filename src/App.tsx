@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { useAuth } from './contexts/AuthContext'
+import { ViewMonthProvider } from './contexts/ViewMonthContext'
 import { LoginPage } from './pages/LoginPage'
 import { HomePage } from './pages/HomePage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -25,7 +26,9 @@ export default function App() {
         path="/"
         element={
           <Protected>
-            <AppShell />
+            <ViewMonthProvider>
+              <AppShell />
+            </ViewMonthProvider>
           </Protected>
         }
       >

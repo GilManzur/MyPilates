@@ -7,6 +7,7 @@ import type {
   UserProfile,
 } from '../../types'
 import { counterKeyForDocumentType, isVoidableDocumentType } from '../documents'
+import { localDateKey } from '../dates'
 import type { DataRepository, SeedableDocumentCounter } from './types'
 import { createId } from './types'
 
@@ -97,7 +98,7 @@ export function createLocalRepository(): DataRepository {
     },
     async listLessons(uid, yearMonth) {
       return (readStore().lessons[uid] ?? [])
-        .filter((lesson) => lesson.startAt.startsWith(yearMonth))
+        .filter((lesson) => localDateKey(lesson.startAt).startsWith(yearMonth))
         .sort((a, b) => a.startAt.localeCompare(b.startAt))
     },
     async upsertLesson(uid, lesson) {

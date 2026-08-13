@@ -338,7 +338,7 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  /* Keep chevrons in physical LTR order: ‹ previous · › next */
+  /* Physical left = next month, right = previous (RTL reading). */
   direction: ltr;
 }
 
@@ -359,6 +359,10 @@ h2 {
   line-height: 1;
   font-weight: 400;
   color: var(--brand);
+}
+
+.month-switcher__nav:disabled {
+  opacity: 0.28;
 }
 
 .list {
@@ -910,8 +914,8 @@ h2 {
 
 .month-calendar {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 6px;
+  padding: 8px;
 }
 
 .month-calendar.is-picking-day .month-calendar__cell {
@@ -940,21 +944,21 @@ h2 {
 
 .month-calendar__weekday {
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--ink-soft);
-  padding-block: 2px;
+  padding-block: 0;
 }
 
 .month-calendar__cell {
-  min-height: 78px;
-  border-radius: 10px;
+  min-height: 40px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba(61, 90, 76, 0.1);
-  padding: 4px;
+  padding: 2px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -968,7 +972,7 @@ h2 {
 }
 
 .month-calendar__cell.is-expanded-week {
-  min-height: 120px;
+  min-height: 40px;
 }
 
 .month-calendar__cell.is-expanded-week .month-calendar__events {
@@ -1039,12 +1043,7 @@ h2 {
 }
 
 .month-calendar__legend {
-  list-style: none;
-  margin: 4px 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
+  display: none;
 }
 
 .month-calendar__legend li {
@@ -1086,7 +1085,7 @@ h2 {
 }
 /* Crowded-week expansion only helps the text chips — keep cells uniform on phones. */
 .month-calendar__cell.is-expanded-week {
-  min-height: 78px;
+  min-height: 40px;
 }
 @media (min-width: 481px) {
   .month-calendar__dots {
@@ -1098,12 +1097,31 @@ h2 {
   .month-calendar__cell.is-expanded-week {
     min-height: 120px;
   }
+  .month-calendar__legend {
+    display: flex;
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
 }
 
 /* Day agenda (opens when a day is tapped on mobile). */
 .day-agenda {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+}
+.day-agenda .panel__head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.calendar-page.stack {
+  gap: 8px;
+}
+.calendar-page .page-head h1 {
+  margin: 0;
+  font-size: 1.35rem;
 }
 .day-agenda__item {
   cursor: pointer;
@@ -1126,7 +1144,7 @@ h2 {
 
 @media (max-width: 380px) {
   .month-calendar__cell {
-    min-height: 68px;
+    min-height: 36px;
   }
 
   .month-calendar__event-title {

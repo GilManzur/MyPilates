@@ -1,31 +1,39 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
-import { Field, TextArea, TextInput, TextSelect } from '../components/Field'
+import { Field, TextInput, TextSelect } from '../components/Field'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
 import { useHourEntries } from '../hooks/useHourEntries'
 import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
-import { currentYearMonth, formatILS } from '../lib/money/calculations'
-import { formatLessonTime, formatShortDate } from '../lib/dates'
+import { formatILS } from '../lib/money/calculations'
+import {
+  defaultDateInMonth,
+  formatLessonTime,
+  formatShortDate,
+  fromLocalDateAndTime,
+} from '../lib/dates'
+import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
+import { useViewMonth } from '../contexts/ViewMonthContext'
 
 export function HoursPage() {
-  const [yearMonth, setYearMonth] = useState(currentYearMonth())
+  const { yearMonth, setYearMonth } = useViewMonth()
   const { studios } = useStudios()
-  const { lessons, loading: lessonsLoading, refresh: refreshLessons } = useLessons(yearMonth)
-  const {
-    entries,
-    loading: hoursLoading,
-    addManualHours,
-    confirmLessonHours,
-    removeEntry,
-  } = useHourEntries(yearMonth)
+  const { lessons, loading: lessonsLoading, refresh: refreshLessons, saveLesson, saveWeeklyLessons } =
+    useLessons(yearMonth)
+  const { entries, loading: hoursLoading, confirmLessonHours, removeEntry } = useHourEntries(yearMonth)
   const [studioId, setStudioId] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [hours, setHours] = useState('1')
-  const [note, setNote] = useState('')
+  const [date, setDate] = useState(() => defaultDateInMonth(yearMonth))
+  const [startTime, setStartTime] = useState('10:00')
+  const [endTime, setEndTime] = useState('11:00')
+  const [title, setTitle] = useState('שיעור פילאטיס')
+  const [isSwap, setIsSwap] = useState(false)
+  const [weekly, setWeekly] = useState(false)
+  const [untilDate, setUntilDate] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
 
@@ -42,6 +50,25 @@ export function HoursPage() {
     [studios],
   )
 
+  const selectedStudio = studioMap[studioId || studios[0]?.id || '']
+  const swapAvailable = (selectedStudio?.swapPay ?? 0) > 0
+
+  useEffect(() => {
+    setDate((prev) => (prev.startsWith(yearMonth) ? prev : defaultDateInMonth(yearMonth)))
+  }, [yearMonth])
+
+  useEffect(() => {
+    if (!swapAvailable) setIsSwap(false)
+  }, [swapAvailable])
+
+  const weeklyCount = useMemo(() => {
+    if (!weekly || !date || !startTime || !endTime || !untilDate) return 0
+    const startAt = fromLocalDateAndTime(date, startTime)
+    const endAt = fromLocalDateAndTime(date, endTime)
+    if (new Date(endAt) <= new Date(startAt)) return 0
+    return buildWeeklyOccurrences(startAt, endAt, untilDate).length
+  }, [weekly, date, startTime, endTime, untilDate])
+
   const now = Date.now()
   const unconfirmed = lessons.filter(
     (lesson) =>
@@ -50,20 +77,62 @@ export function HoursPage() {
       new Date(lesson.endAt).getTime() <= now,
   )
 
-  const onManualSubmit = async (event: React.FormEvent) => {
+  const onLessonSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const selectedStudio = studioId || studios[0]?.id
-    const parsedHours = Number(hours)
-    if (!selectedStudio || !parsedHours || parsedHours <= 0) return
-    await addManualHours({
-      studioId: selectedStudio,
-      date,
-      hours: parsedHours,
-      note: note.trim() || undefined,
-    })
-    setNote('')
-    setHours('1')
-    setMessage('השעות נשמרו')
+    setError('')
+    const selectedId = studioId || studios[0]?.id
+    if (!selectedId) {
+      setError('בחרי סטודיו')
+      return
+    }
+    if (!date || !startTime || !endTime) {
+      setError('בחרי תאריך ושעות')
+      return
+    }
+    const startAt = fromLocalDateAndTime(date, startTime)
+    const endAt = fromLocalDateAndTime(date, endTime)
+    if (new Date(endAt) <= new Date(startAt)) {
+      setError('שעת הסיום חייבת להיות אחרי ההתחלה')
+      return
+    }
+
+    setSaving(true)
+    try {
+      if (weekly) {
+        if (!untilDate) {
+          setError('בחרי תאריך סיום לסדרה')
+          return
+        }
+        const count = await saveWeeklyLessons({
+          studioId: selectedId,
+          title,
+          startAt,
+          endAt,
+          untilDate,
+          isSwap: swapAvailable && isSwap,
+        })
+        if (count === 0) {
+          setError('לא נוצרו שיעורים — בדקי את טווח התאריכים')
+          return
+        }
+        setMessage(`נוספו ${count} שיעורים ליומן`)
+      } else {
+        await saveLesson({
+          studioId: selectedId,
+          title,
+          startAt,
+          endAt,
+          isSwap: swapAvailable && isSwap,
+        })
+        setMessage('השיעור נוסף ליומן')
+      }
+      setTitle('שיעור פילאטיס')
+      setIsSwap(false)
+      setWeekly(false)
+      setUntilDate('')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const onConfirmLesson = async (lessonId: string) => {
@@ -120,14 +189,19 @@ export function HoursPage() {
       </section>
 
       <section className="panel">
-        <h2>הזנה ידנית</h2>
-        <p className="hint">אם אין שיעור ביומן — הזיני כאן את השעות לפי סטודיו.</p>
-        <form className="stack-sm" onSubmit={(e) => void onManualSubmit(e)}>
+        <h2>הוספת שיעור ליומן</h2>
+        <p className="hint">השיעור יישמר ביומן. אחרי שהוא מתקיים אפשר לאשר כאן את השעות.</p>
+        <form className="stack-sm" onSubmit={(e) => void onLessonSubmit(e)}>
           <Field label="סטודיו">
             <TextSelect
               required
               value={studioId || studios[0]?.id || ''}
-              onChange={(e) => setStudioId(e.target.value)}
+              onChange={(e) => {
+                const nextId = e.target.value
+                const studio = studioMap[nextId]
+                setStudioId(nextId)
+                if ((studio?.swapPay ?? 0) <= 0) setIsSwap(false)
+              }}
               disabled={studios.length === 0}
             >
               {studios.map((studio) => (
@@ -137,26 +211,104 @@ export function HoursPage() {
               ))}
             </TextSelect>
           </Field>
-          <div className="grid-2">
-            <Field label="תאריך">
-              <TextInput type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-            </Field>
-            <Field label="שעות">
+          <Field label="שם שיעור">
+            <TextInput
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="שיעור פילאטיס"
+            />
+          </Field>
+          <Field label="תאריך">
+            <TextInput
+              type="date"
+              required
+              value={date}
+              onChange={(e) => {
+                const next = e.target.value
+                setDate(next)
+                if (weekly && next && startTime) {
+                  setUntilDate(defaultWeeklyUntilDate(fromLocalDateAndTime(next, startTime)))
+                }
+              }}
+            />
+          </Field>
+          <div className="time-fields">
+            <Field label="התחלה">
               <TextInput
-                type="number"
-                min="0.25"
-                step="0.25"
+                type="time"
                 required
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
+                value={startTime}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setStartTime(next)
+                  if (weekly && date && next) {
+                    setUntilDate(defaultWeeklyUntilDate(fromLocalDateAndTime(date, next)))
+                  }
+                }}
+              />
+            </Field>
+            <Field label="סיום">
+              <TextInput
+                type="time"
+                required
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
               />
             </Field>
           </div>
-          <Field label="הערה (אופציונלי)">
-            <TextArea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-          </Field>
-          <Button type="submit" disabled={studios.length === 0}>
-            שמור שעות
+          {swapAvailable && (
+            <label className="check-field">
+              <input
+                type="checkbox"
+                checked={isSwap}
+                onChange={(e) => setIsSwap(e.target.checked)}
+              />
+              <span>
+                <strong>החלפה</strong>
+                <span className="check-field__hint">
+                  תעריף {formatILS(selectedStudio?.swapPay ?? 0)} לשעה
+                </span>
+              </span>
+            </label>
+          )}
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={weekly}
+              onChange={(e) => {
+                const next = e.target.checked
+                setWeekly(next)
+                if (next && date && startTime) {
+                  setUntilDate(defaultWeeklyUntilDate(fromLocalDateAndTime(date, startTime)))
+                }
+              }}
+            />
+            <span>
+              <strong>שיעור קבוע</strong>
+              <span className="check-field__hint">כל אותו יום ושעה בשבוע</span>
+            </span>
+          </label>
+          {weekly && (
+            <Field label="עד תאריך">
+              <TextInput
+                type="date"
+                required
+                value={untilDate}
+                min={date || undefined}
+                onChange={(e) => setUntilDate(e.target.value)}
+              />
+            </Field>
+          )}
+          {weekly && weeklyCount > 0 && (
+            <p className="form-hint">ייווצרו {weeklyCount} שיעורים ביומן</p>
+          )}
+          {error && <p className="form-error">{error}</p>}
+          <Button type="submit" disabled={studios.length === 0 || saving}>
+            {saving
+              ? 'שומר…'
+              : weekly && weeklyCount > 0
+                ? `שמירת ${weeklyCount} שיעורים`
+                : 'שמור שיעור'}
           </Button>
         </form>
       </section>
@@ -182,6 +334,7 @@ export function HoursPage() {
                   <p className="list-item__meta">
                     {formatShortDate(entry.date)} · {entry.source === 'lesson' ? 'משיעור' : 'ידני'}
                     {entry.note ? ` · ${entry.note}` : ''}
+                    {entry.isSwap ? ' · החלפה' : ''}
                   </p>
                 </div>
                 <IconButton

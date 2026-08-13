@@ -19,15 +19,15 @@ import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import type { DocumentType, StudioMonthSummary } from '../types'
 import {
   buildMonthSummaries,
-  currentYearMonth,
   formatILS,
   pendingAmount,
   remainingEntriesForStudioMonth,
   totalAmount,
 } from '../lib/money/calculations'
+import { useViewMonth } from '../contexts/ViewMonthContext'
 
 export function PaymentsPage() {
-  const [yearMonth, setYearMonth] = useState(currentYearMonth())
+  const { yearMonth, setYearMonth } = useViewMonth()
   const { studios, loading: studiosLoading } = useStudios()
   const { entries, loading: entriesLoading } = useHourEntries(yearMonth)
   const { payments, loading: paymentsLoading, confirmPayment, unconfirmPayment } =

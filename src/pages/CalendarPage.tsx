@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { Field, TextInput, TextSelect } from '../components/Field'
@@ -8,11 +8,18 @@ import { Overlay } from '../components/Overlay'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { useStudios } from '../hooks/useStudios'
 import { useLessons } from '../hooks/useLessons'
-import { currentYearMonth, formatILS } from '../lib/money/calculations'
-import { formatShortDate, fromLocalDateAndTime, localDateKey, localTimeFromIso } from '../lib/dates'
+import { formatILS } from '../lib/money/calculations'
+import {
+  defaultDateInMonth,
+  formatShortDate,
+  fromLocalDateAndTime,
+  localDateKey,
+  localTimeFromIso,
+} from '../lib/dates'
 import { buildWeeklyOccurrences, defaultWeeklyUntilDate } from '../lib/recurrence'
 import { DEFAULT_STUDIO_COLOR } from '../lib/data/types'
 import type { Lesson } from '../types'
+import { useViewMonth } from '../contexts/ViewMonthContext'
 
 const emptyForm = {
   studioId: '',
@@ -27,7 +34,7 @@ const emptyForm = {
 }
 
 export function CalendarPage() {
-  const [yearMonth, setYearMonth] = useState(currentYearMonth())
+  const { yearMonth, setYearMonth } = useViewMonth()
   const { studios } = useStudios()
   const { lessons, loading, saveLesson, saveWeeklyLessons, removeLesson } = useLessons(yearMonth)
   const [form, setForm] = useState(emptyForm)
@@ -35,12 +42,14 @@ export function CalendarPage() {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [pickingDay, setPickingDay] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState(() => defaultDateInMonth(yearMonth))
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
 
+  useEffect(() => {
+    setSelectedDate((prev) => (prev.startsWith(yearMonth) ? prev : defaultDateInMonth(yearMonth)))
+  }, [yearMonth])
+
   const dayLessons = useMemo(() => {
-    if (!selectedDate) return []
     return lessons
       .filter((lesson) => lesson.status !== 'cancelled' && localDateKey(lesson.startAt) === selectedDate)
       .sort((a, b) => a.startAt.localeCompare(b.startAt))
@@ -54,16 +63,7 @@ export function CalendarPage() {
     return buildWeeklyOccurrences(startAt, endAt, form.untilDate).length
   }, [form.weekly, form.date, form.startTime, form.endTime, form.untilDate])
 
-  const startPickingDay = () => {
-    if (studios.length === 0) return
-    setOpen(false)
-    setEditingId(null)
-    setPickingDay((prev) => !prev)
-    setError('')
-  }
-
   const openCreateOnDate = (date: string) => {
-    setPickingDay(false)
     setEditingId(null)
     setForm({
       studioId: studios[0]?.id ?? '',
@@ -157,29 +157,11 @@ export function CalendarPage() {
   const editingLesson = editingId ? lessons.find((item) => item.id === editingId) : null
 
   return (
-    <div className="stack">
-      <div className="page-head">
-        <div>
-          <p className="eyebrow">יומן חודשי</p>
-          <h1>שיעורים</h1>
-        </div>
-        <Button
-          onClick={startPickingDay}
-          disabled={studios.length === 0}
-          variant={pickingDay ? 'secondary' : 'primary'}
-        >
-          {pickingDay ? 'ביטול בחירה' : 'שיעור חדש'}
-        </Button>
-      </div>
-
+    <div className="stack calendar-page">
       <MonthSwitcher yearMonth={yearMonth} onChange={setYearMonth} />
 
       {studios.length === 0 && (
         <p className="empty panel">קודם הוסיפי סטודיו בהגדרות.</p>
-      )}
-
-      {pickingDay && (
-        <p className="toast">בחרי תאריך בלוח כדי להוסיף שיעור</p>
       )}
 
       {loading ? (
@@ -189,69 +171,52 @@ export function CalendarPage() {
           yearMonth={yearMonth}
           lessons={lessons}
           studios={studios}
-          pickingDay={pickingDay}
-          selectedDate={selectedDate ?? undefined}
-          onLessonClick={(lesson) => {
-            setPickingDay(false)
-            openEdit(lesson)
-          }}
-          onDayClick={pickingDay ? openCreateOnDate : undefined}
-          onDaySelect={(date) => setSelectedDate((prev) => (prev === date ? null : date))}
+          selectedDate={selectedDate}
+          onLessonClick={(lesson) => openEdit(lesson)}
+          onDaySelect={(date) => setSelectedDate(date)}
         />
       )}
 
-      {selectedDate && !pickingDay && (
-        <section className="panel day-agenda">
-          <div className="panel__head">
-            <h2>{formatShortDate(selectedDate)}</h2>
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => setSelectedDate(null)}
-            >
-              סגירה
-            </button>
-          </div>
-          {dayLessons.length === 0 ? (
-            <p className="empty">אין שיעורים ביום זה.</p>
-          ) : (
-            <ul className="list">
-              {dayLessons.map((lesson) => {
-                const studio = studios.find((item) => item.id === lesson.studioId)
-                return (
-                  <li key={lesson.id} className="list-item list-item--action">
-                    <button
-                      type="button"
-                      className="list-item__main day-agenda__item"
-                      onClick={() => {
-                        setPickingDay(false)
-                        openEdit(lesson)
-                      }}
-                    >
-                      <span
-                        className="color-dot"
-                        style={{ background: studio?.color ?? DEFAULT_STUDIO_COLOR }}
-                      />
-                      <span className="list-item__text">
-                        <span className="list-item__title">{studio?.name ?? 'סטודיו'}</span>
-                        <span className="list-item__meta">
-                          {localTimeFromIso(lesson.startAt)}–{localTimeFromIso(lesson.endAt)}
-                          {lesson.title ? ` · ${lesson.title}` : ''}
-                        </span>
+      <section className="panel day-agenda">
+        <div className="panel__head">
+          <h2>{formatShortDate(selectedDate)}</h2>
+        </div>
+        {dayLessons.length === 0 ? (
+          <p className="empty">אין שיעורים ביום זה.</p>
+        ) : (
+          <ul className="list">
+            {dayLessons.map((lesson) => {
+              const studio = studios.find((item) => item.id === lesson.studioId)
+              return (
+                <li key={lesson.id} className="list-item list-item--action">
+                  <button
+                    type="button"
+                    className="list-item__main day-agenda__item"
+                    onClick={() => openEdit(lesson)}
+                  >
+                    <span
+                      className="color-dot"
+                      style={{ background: studio?.color ?? DEFAULT_STUDIO_COLOR }}
+                    />
+                    <span className="list-item__text">
+                      <span className="list-item__title">{studio?.name ?? 'סטודיו'}</span>
+                      <span className="list-item__meta">
+                        {localTimeFromIso(lesson.startAt)}–{localTimeFromIso(lesson.endAt)}
+                        {lesson.title ? ` · ${lesson.title}` : ''}
                       </span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-          {studios.length > 0 && (
-            <Button variant="secondary" onClick={() => openCreateOnDate(selectedDate)}>
-              הוספת שיעור ביום זה
-            </Button>
-          )}
-        </section>
-      )}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {studios.length > 0 && (
+          <Button variant="secondary" onClick={() => openCreateOnDate(selectedDate)}>
+            הוספת שיעור ביום זה
+          </Button>
+        )}
+      </section>
 
       {open && (
         <Overlay onClose={() => setOpen(false)}>
@@ -287,21 +252,6 @@ export function CalendarPage() {
                 ))}
               </TextSelect>
             </Field>
-            {swapAvailable && (
-              <label className="check-field">
-                <input
-                  type="checkbox"
-                  checked={form.isSwap}
-                  onChange={(e) => setForm((prev) => ({ ...prev, isSwap: e.target.checked }))}
-                />
-                <span>
-                  <strong>החלפה</strong>
-                  <span className="check-field__hint">
-                    תעריף {formatILS(selectedStudio?.swapPay ?? 0)} לשעה
-                  </span>
-                </span>
-              </label>
-            )}
             <Field label="כותרת">
               <TextInput
                 value={form.title}
@@ -360,6 +310,21 @@ export function CalendarPage() {
                 />
               </Field>
             </div>
+            {swapAvailable && (
+              <label className="check-field">
+                <input
+                  type="checkbox"
+                  checked={form.isSwap}
+                  onChange={(e) => setForm((prev) => ({ ...prev, isSwap: e.target.checked }))}
+                />
+                <span>
+                  <strong>החלפה</strong>
+                  <span className="check-field__hint">
+                    תעריף {formatILS(selectedStudio?.swapPay ?? 0)} לשעה
+                  </span>
+                </span>
+              </label>
+            )}
             {!editingId && (
               <>
                 <label className="check-field">
