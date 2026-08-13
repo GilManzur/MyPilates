@@ -81,7 +81,7 @@ export function PaymentsPage() {
 
     setConfirm({
       title: `להפיק ${documentTypeLabel(type_)} על ${formatILS(subset.amount)}?`,
-      message: `עבור ${summary.studioName} · ${remaining.length} רשומות שעדיין לא קובלו החודש. אפשר לבטל מאוחר יותר במסך המסמכים והשיעורים יחזרו ליתרה.`,
+      message: `עבור ${summary.studioName} · ${remaining.length} רשומות שעדיין לא התקבלו החודש. אפשר לבטל מאוחר יותר במסך המסמכים והשיעורים יחזרו ליתרה.`,
       confirmLabel: 'הפיקי',
       danger: false,
       onConfirm: () => {
@@ -165,10 +165,10 @@ export function PaymentsPage() {
                     ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
                     : ''}
                 </p>
-                {coveredAmount > 0 && (
+                {coveredAmount > 0 && activeType === 'receipt' && (
                   <p className="list-item__meta">
-                    כבר קובל: {formatILS(coveredAmount)}
-                    {remainingAmount > 0 ? ` · נותר: ${formatILS(remainingAmount)}` : ' · הכול קובל'}
+                    כבר התקבל: {formatILS(coveredAmount)}
+                    {remainingAmount > 0 ? ` · נותר: ${formatILS(remainingAmount)}` : ' · הכול התקבל'}
                   </p>
                 )}
               </div>

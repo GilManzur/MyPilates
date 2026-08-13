@@ -372,7 +372,7 @@ export function DocumentsPage() {
       setError('הזיני שם לקוח / משלם')
       return
     }
-    if (computedItems.length === 0 || total <= 0) {
+    if (computedItems.length === 0 || total === 0) {
       setError('הוסיפי לפחות שורה אחת עם תיאור וסכום')
       return
     }
@@ -715,7 +715,6 @@ export function DocumentsPage() {
                   <Field label="כמות">
                     <TextInput
                       type="number"
-                      min="0"
                       step="0.25"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, { quantity: e.target.value })}
@@ -724,7 +723,6 @@ export function DocumentsPage() {
                   <Field label="מחיר יחידה">
                     <TextInput
                       type="number"
-                      min="0"
                       step="0.01"
                       value={item.unitPrice}
                       onChange={(e) => updateItem(index, { unitPrice: e.target.value })}
@@ -851,7 +849,7 @@ export function DocumentsPage() {
                 תצוגה מקדימה
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? 'מפיק…' : 'הפקה'}
+                {saving ? 'מפיק…' : 'הפק מסמך'}
               </Button>
             </div>
           </form>

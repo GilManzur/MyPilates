@@ -28,6 +28,8 @@ export function Overlay({
   onClose?: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     const container = ref.current
@@ -39,9 +41,9 @@ export function Overlay({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (onClose) {
+        if (onCloseRef.current) {
           event.preventDefault()
-          onClose()
+          onCloseRef.current()
         }
         return
       }
@@ -65,7 +67,7 @@ export function Overlay({
       document.removeEventListener('keydown', onKeyDown, true)
       previouslyFocused?.focus?.()
     }
-  }, [onClose])
+  }, [])
 
   return createPortal(
     <div ref={ref} style={{ display: 'contents' }}>
