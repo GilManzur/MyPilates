@@ -1,0 +1,202 @@
+<title>תשלומים כטבלה + סטודיוים ככרטיסים — תצוגה</title>
+<div class="wrap" dir="rtl" lang="he">
+  <header class="masthead">
+    <p class="eyebrow">YamPilates · שיפורי ממשק</p>
+    <h1>עמוד תשלומים כטבלה · הגדרת סטודיוים ככרטיסים</h1>
+    <p class="lede">תצוגה נאמנה עם ה-CSS האמיתי של האפליקציה (אותם טוקנים, אותן מחלקות). זה בדיוק מה שתראה במסך — במצב בהיר וכהה.</p>
+  </header>
+
+  <section class="demo">
+    <h2 class="demo__title">עמוד תשלומים — טבלה מסודרת</h2>
+    <p class="demo__note">היה: רשימת כרטיסים. עכשיו: טבלה עם עמודות ברורות, תג סטטוס (שולם / ממתין), וגלילה אופקית במסכים צרים.</p>
+    <div class="panel pay-table-wrap">
+      <table class="pay-table">
+        <thead>
+          <tr>
+            <th>סטודיו</th>
+            <th>פירוט</th>
+            <th class="pay-table__num">סכום</th>
+            <th>סטטוס</th>
+            <th class="pay-table__act">פעולות</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="pay-row">
+            <td class="pay-row__studio">
+              <span class="color-dot" style="background:#5B7C6A"></span>
+              <span class="pay-row__name">סטודיו גלים</span>
+            </td>
+            <td class="pay-row__detail">
+              <span class="pay-row__hours">4 שעות × ₪150 · 2 נסיעות × ₪30</span>
+              <span class="pay-row__covered">כבר התקבל: ₪450 · נותר: ₪150</span>
+            </td>
+            <td class="pay-row__amount">₪660</td>
+            <td><span class="badge badge--confirmed">שולם</span></td>
+            <td class="pay-row__actions">
+              <span class="ib ib--secondary" title="בטלי אישור תשלום">✕</span>
+              <span class="ib ib--primary" title="הפק קבלה על היתרה">₪</span>
+            </td>
+          </tr>
+          <tr class="pay-row">
+            <td class="pay-row__studio">
+              <span class="color-dot" style="background:#B4462F"></span>
+              <span class="pay-row__name">אולם מרכז</span>
+            </td>
+            <td class="pay-row__detail">
+              <span class="pay-row__hours">2 שעות × ₪180</span>
+            </td>
+            <td class="pay-row__amount">₪360</td>
+            <td><span class="badge badge--pending">ממתין</span></td>
+            <td class="pay-row__actions">
+              <span class="ib ib--primary" title="אישור שקיבלתי תשלום">✓</span>
+              <span class="ib" title="הפק חשבונית עסקה">▤</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="demo">
+    <h2 class="demo__title">הגדרות — סטודיוים ככרטיסים</h2>
+    <p class="demo__note">היה: רשימה שטוחה. עכשיו: רשת כרטיסים עם פס צבע, תעריף בולט, צ׳יפים לנסיעה/החלפה, ושורת טלפון+אימייל.</p>
+    <div class="panel">
+      <div class="panel__head">
+        <h3 style="margin:0">ניהול סטודיוים</h3>
+        <span class="btn-ghost">סטודיו חדש</span>
+      </div>
+      <div class="studio-grid">
+        <article class="studio-card" style="--studio-color:#5B7C6A">
+          <header class="studio-card__head">
+            <span class="studio-card__name">סטודיו גלים</span>
+            <span class="studio-card__actions"><span class="ib">✎</span><span class="ib ib--danger">🗑</span></span>
+          </header>
+          <p class="studio-card__rate">₪150 <span>לשעה</span></p>
+          <div class="studio-card__chips">
+            <span class="studio-chip">נסיעה ₪30 ליום</span>
+          </div>
+          <p class="studio-card__contact"><span dir="ltr">052-1234567</span> · <span dir="ltr">galim@studio.co</span></p>
+        </article>
+        <article class="studio-card" style="--studio-color:#B4462F">
+          <header class="studio-card__head">
+            <span class="studio-card__name">אולם מרכז</span>
+            <span class="studio-card__actions"><span class="ib">✎</span><span class="ib ib--danger">🗑</span></span>
+          </header>
+          <p class="studio-card__rate">₪180 <span>לשעה</span></p>
+          <div class="studio-card__chips">
+            <span class="studio-chip">החלפה ₪120 לשעה</span>
+          </div>
+        </article>
+        <article class="studio-card" style="--studio-color:#6a8a9b">
+          <header class="studio-card__head">
+            <span class="studio-card__name">בית ספר צפון</span>
+            <span class="studio-card__actions"><span class="ib">✎</span><span class="ib ib--danger">🗑</span></span>
+          </header>
+          <p class="studio-card__rate">₪140 <span>לשעה</span></p>
+          <div class="studio-card__chips">
+            <span class="studio-chip">נסיעה ₪25 ליום</span>
+            <span class="studio-chip">החלפה ₪100 לשעה</span>
+          </div>
+          <p class="studio-card__contact"><span dir="ltr">03-5556677</span></p>
+        </article>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+  /* ---- App tokens (from src/index.css) ---- */
+  :root{
+    --bg:#e8eee9; --bg-deep:#d7e0d9;
+    --surface:rgba(255,255,255,0.78); --surface-solid:#f4f7f5;
+    --ink:#1a2420; --ink-soft:#4d5c55;
+    --brand:#3d5a4c; --brand-2:#5b7c6a; --accent:#6a8a9b; --danger:#9b4d4d;
+    --line:rgba(61,90,76,0.14); --radius:22px;
+    --page-bg:#e8eee9; --card:rgba(255,255,255,0.78);
+  }
+  :root:not([data-theme="light"]){ @media (prefers-color-scheme:dark){
+    --bg:#131a16; --bg-deep:#0e1512;
+    --surface:rgba(30,40,35,0.72); --surface-solid:#1b2420;
+    --ink:#e8efea; --ink-soft:#9db0a6;
+    --brand:#8fb3a1; --brand-2:#5b7c6a; --accent:#8fb0c0; --danger:#d98c8c;
+    --line:rgba(180,210,195,0.16);
+    --page-bg:#0e1512; --card:rgba(30,40,35,0.72);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#131a16; --bg-deep:#0e1512;
+    --surface:rgba(30,40,35,0.72); --surface-solid:#1b2420;
+    --ink:#e8efea; --ink-soft:#9db0a6;
+    --brand:#8fb3a1; --brand-2:#5b7c6a; --accent:#8fb0c0; --danger:#d98c8c;
+    --line:rgba(180,210,195,0.16);
+    --page-bg:#0e1512; --card:rgba(30,40,35,0.72);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page-bg); color:var(--ink);
+    font-family:'Heebo','Segoe UI',system-ui,Arial,sans-serif;
+    background-image:
+      radial-gradient(circle at 12% -10%, rgba(106,138,155,0.20), transparent 42%),
+      radial-gradient(circle at 90% 8%, rgba(91,124,106,0.16), transparent 36%);}
+  .wrap{max-width:940px; margin:0 auto; padding:40px 20px 64px;}
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--brand-2); font-weight:700; margin:0 0 10px;}
+  h1{font-size:clamp(22px,3.6vw,32px); line-height:1.18; margin:0 0 12px; font-weight:800; letter-spacing:-.01em; text-wrap:balance;}
+  .lede{font-size:16px; line-height:1.6; color:var(--ink-soft); margin:0; max-width:64ch;}
+  .demo{margin-top:36px;}
+  .demo__title{font-size:19px; font-weight:800; margin:0 0 4px;}
+  .demo__note{font-size:13.5px; color:var(--ink-soft); margin:0 0 14px; max-width:66ch;}
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 18px; backdrop-filter:blur(8px);}
+  .panel__head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .btn-ghost{font-size:13px; font-weight:700; color:var(--brand); border:1px solid var(--line);
+    border-radius:14px; padding:7px 14px;}
+  .color-dot{width:12px; height:12px; border-radius:50%; flex:0 0 auto; display:inline-block;}
+  .badge{display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px;
+    font-size:.75rem; font-weight:600; white-space:nowrap;}
+  .badge--pending{background:rgba(106,138,155,0.16); color:#355465;}
+  .badge--confirmed{background:rgba(91,124,106,0.18); color:var(--brand);}
+  :root:not([data-theme="light"]) .badge--pending{ @media (prefers-color-scheme:dark){ color:#a9c7d6; }}
+  :root[data-theme="dark"] .badge--pending{ color:#a9c7d6; }
+  /* icon-button stand-in (real app uses IconButton) */
+  .ib{display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px;
+    border-radius:12px; border:1px solid var(--line); background:var(--surface-solid);
+    color:var(--ink-soft); font-size:15px; cursor:pointer;}
+  .ib--primary{background:var(--brand); color:#fff; border-color:transparent;}
+  .ib--secondary{background:var(--surface-solid);}
+  .ib--danger{color:var(--danger);}
+
+  /* ---- Payments table (verbatim from src/index.css) ---- */
+  .pay-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; padding:6px 4px;}
+  .pay-table{width:100%; border-collapse:collapse; font-size:14px;}
+  .pay-table thead th{text-align:start; font-size:12px; font-weight:600; color:var(--ink-soft);
+    padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  .pay-table__num{text-align:end;}
+  .pay-table__act{text-align:end;}
+  .pay-row{border-bottom:1px solid var(--line);}
+  .pay-row:last-child{border-bottom:0;}
+  .pay-row>td{padding:12px 10px; vertical-align:middle;}
+  .pay-row__studio{display:flex; align-items:center; gap:9px; white-space:nowrap;}
+  .pay-row__name{font-weight:600;}
+  .pay-row__detail{display:flex; flex-direction:column; gap:3px; min-width:160px;}
+  .pay-row__hours{font-size:13px; color:var(--ink-soft);}
+  .pay-row__covered{font-size:12px; color:var(--brand); font-weight:600;}
+  .pay-row__amount{text-align:end; font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap;}
+  .pay-row__actions{white-space:nowrap; text-align:end;}
+  .pay-row__actions>*{display:inline-flex; gap:6px;}
+
+  /* ---- Studios card grid (verbatim from src/index.css) ---- */
+  .studio-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+  .studio-card{--studio-color:var(--brand); position:relative; border:1px solid var(--line);
+    border-radius:var(--radius); background:var(--surface-solid); padding:14px 16px; overflow:hidden;}
+  .studio-card::before{content:''; position:absolute; inset-block:0; inset-inline-start:0;
+    width:4px; background:var(--studio-color);}
+  .studio-card__head{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .studio-card__name{font-weight:700; font-size:15px;}
+  .studio-card__actions{display:inline-flex; gap:4px; flex:0 0 auto;}
+  .studio-card__rate{margin:8px 0 0; font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--studio-color);}
+  .studio-card__rate span{font-size:12px; font-weight:500; color:var(--ink-soft);}
+  .studio-card__chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .studio-chip{font-size:11.5px; font-weight:600; color:var(--ink-soft);
+    background:color-mix(in srgb, var(--studio-color) 12%, transparent);
+    border-radius:999px; padding:3px 9px; white-space:nowrap;}
+  .studio-card__contact{margin:10px 0 0; font-size:12px; color:var(--ink-soft);}
+  .ib{ user-select:none; }
+</style>
