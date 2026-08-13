@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
+import { Logo } from './components/Logo'
 import { useAuth } from './contexts/AuthContext'
 import { ViewMonthProvider } from './contexts/ViewMonthContext'
 import { LoginPage } from './pages/LoginPage'
@@ -13,7 +14,13 @@ import { SettingsPage } from './pages/SettingsPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="boot">טוען MyPilates…</div>
+  if (loading)
+    return (
+      <div className="boot">
+        <Logo size={72} />
+        <p className="boot__name">MyPilates</p>
+      </div>
+    )
   if (!user) return <Navigate to="/login" replace />
   return children
 }
