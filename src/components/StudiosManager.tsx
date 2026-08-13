@@ -96,36 +96,46 @@ export function StudiosManager() {
       ) : studios.length === 0 ? (
         <p className="empty">עדיין אין סטודיוים. הוסיפי את הראשון.</p>
       ) : (
-        <ul className="list">
+        <div className="studio-grid">
           {studios.map((studio) => (
-            <li key={studio.id} className="list-item list-item--action">
-              <div className="list-item__main">
-                <span className="color-dot" style={{ background: studio.color }} />
-                <span className="list-item__body">
-                  <p className="list-item__title">{studio.name}</p>
-                  <p className="list-item__meta">
-                    {formatILS(studio.hourlyRate)} לשעה
-                    {(studio.travelPay ?? 0) > 0
-                      ? ` · נסיעה ${formatILS(studio.travelPay)} ליום`
-                      : ''}
-                    {(studio.swapPay ?? 0) > 0
-                      ? ` · החלפה ${formatILS(studio.swapPay)} לשעה`
-                      : ''}
-                  </p>
-                </span>
+            <article
+              key={studio.id}
+              className="studio-card"
+              style={{ ['--studio-color' as string]: studio.color }}
+            >
+              <header className="studio-card__head">
+                <span className="studio-card__name">{studio.name}</span>
+                <div className="studio-card__actions">
+                  <IconButton label="עריכה" icon="edit" onClick={() => openEdit(studio)} />
+                  <IconButton
+                    label="מחק"
+                    icon="trash"
+                    variant="danger"
+                    onClick={() => confirmRemove(studio)}
+                  />
+                </div>
+              </header>
+              <p className="studio-card__rate">
+                {formatILS(studio.hourlyRate)} <span>לשעה</span>
+              </p>
+              <div className="studio-card__chips">
+                {(studio.travelPay ?? 0) > 0 && (
+                  <span className="studio-chip">נסיעה {formatILS(studio.travelPay)} ליום</span>
+                )}
+                {(studio.swapPay ?? 0) > 0 && (
+                  <span className="studio-chip">החלפה {formatILS(studio.swapPay)} לשעה</span>
+                )}
               </div>
-              <div className="list-item__actions">
-                <IconButton label="עריכה" icon="edit" onClick={() => openEdit(studio)} />
-                <IconButton
-                  label="מחק"
-                  icon="trash"
-                  variant="danger"
-                  onClick={() => confirmRemove(studio)}
-                />
-              </div>
-            </li>
+              {(studio.phone || studio.email) && (
+                <p className="studio-card__contact">
+                  {studio.phone ? <span dir="ltr">{studio.phone}</span> : null}
+                  {studio.phone && studio.email ? ' · ' : ''}
+                  {studio.email ? <span dir="ltr">{studio.email}</span> : null}
+                </p>
+              )}
+            </article>
           ))}
-        </ul>
+        </div>
       )}
 
       {open && (
