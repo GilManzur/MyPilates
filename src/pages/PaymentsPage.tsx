@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconButton } from '../components/IconButton'
 import { MonthSwitcher } from '../components/MonthSwitcher'
+import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
 import { useStudios } from '../hooks/useStudios'
 import { useHourEntries } from '../hooks/useHourEntries'
 import { usePayments } from '../hooks/usePayments'
@@ -21,6 +22,7 @@ import {
   currentYearMonth,
   formatILS,
   pendingAmount,
+  remainingEntriesForStudioMonth,
   totalAmount,
 } from '../lib/money/calculations'
 
@@ -31,9 +33,10 @@ export function PaymentsPage() {
   const { payments, loading: paymentsLoading, confirmPayment, unconfirmPayment } =
     usePayments(yearMonth)
   const loading = studiosLoading || entriesLoading || paymentsLoading
-  const { issue } = useDocuments()
+  const { issue, documents } = useDocuments()
   const { business } = useProfile()
   const [message, setMessage] = useState('')
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
 
   const summaries = useMemo(
     () => buildMonthSummaries(studios, entries, payments, yearMonth),
@@ -43,32 +46,73 @@ export function PaymentsPage() {
   const studioColor = (studioId: string) =>
     studios.find((studio) => studio.id === studioId)?.color ?? DEFAULT_STUDIO_COLOR
 
-  const issueForSummary = async (summary: StudioMonthSummary, type: DocumentType) => {
-    if (!business) return
-    const monthLabel = formatMonthTitle(yearMonth)
-    const draft: DocumentDraft = {
+  /** The un-billed ("remaining") summary for a studio-month and document type. */
+  const remainingSummaryFor = (
+    summary: StudioMonthSummary,
+    type: DocumentType,
+  ): StudioMonthSummary | undefined => {
+    const studio = studios.find((s) => s.id === summary.studioId)
+    if (!studio) return undefined
+    const remaining = remainingEntriesForStudioMonth(
+      entries,
+      documents,
+      summary.studioId,
+      yearMonth,
       type,
-      issuedAt: new Date().toISOString(),
-      recipient: { name: summary.studioName, studioId: summary.studioId },
-      lineItems: buildMonthlyLineItems(summary, monthLabel),
-      total: summary.amount,
-      currency: 'ILS',
-      business,
-      sourceRef: {
-        studioId: summary.studioId,
-        yearMonth,
-        ...(summary.paymentId ? { paymentId: summary.paymentId } : {}),
+    )
+    if (remaining.length === 0) return undefined
+    return buildMonthSummaries([studio], remaining, payments, yearMonth)[0]
+  }
+
+  const issueRemaining = async (summary: StudioMonthSummary, type: DocumentType) => {
+    if (!business) return
+    const type_ = type
+    const studio = studios.find((s) => s.id === summary.studioId)
+    if (!studio) return
+    const remaining = remainingEntriesForStudioMonth(
+      entries,
+      documents,
+      summary.studioId,
+      yearMonth,
+      type_,
+    )
+    const subset = buildMonthSummaries([studio], remaining, payments, yearMonth)[0]
+    if (!subset || subset.amount <= 0) return
+
+    setConfirm({
+      title: `להפיק ${documentTypeLabel(type_)} על ${formatILS(subset.amount)}?`,
+      message: `עבור ${summary.studioName} · ${remaining.length} רשומות שעדיין לא קובלו החודש. אפשר לבטל מאוחר יותר במסך המסמכים והשיעורים יחזרו ליתרה.`,
+      confirmLabel: 'הפיקי',
+      danger: false,
+      onConfirm: () => {
+        void (async () => {
+          const draft: DocumentDraft = {
+            type: type_,
+            issuedAt: new Date().toISOString(),
+            recipient: { name: summary.studioName, studioId: summary.studioId },
+            lineItems: buildMonthlyLineItems(subset, formatMonthTitle(yearMonth)),
+            total: subset.amount,
+            currency: 'ILS',
+            business,
+            sourceRef: {
+              studioId: summary.studioId,
+              yearMonth,
+              entryIds: remaining.map((entry) => entry.id),
+              ...(summary.paymentId ? { paymentId: summary.paymentId } : {}),
+            },
+            ...(type_ === 'receipt'
+              ? { payments: [{ method: 'transfer' as const, amount: subset.amount }] }
+              : {}),
+          }
+          const created = await issue(draft)
+          if (created) {
+            setMessage(
+              `${documentTypeLabel(type_)} מס׳ ${formatDocumentNumber(type_, created.number)} הופק/ה עבור ${summary.studioName}`,
+            )
+          }
+        })()
       },
-      ...(type === 'receipt'
-        ? { payments: [{ method: 'transfer' as const, amount: summary.amount }] }
-        : {}),
-    }
-    const created = await issue(draft)
-    if (created) {
-      setMessage(
-        `${documentTypeLabel(type)} מס׳ ${formatDocumentNumber(type, created.number)} הופק/ה עבור ${summary.studioName}`,
-      )
-    }
+    })
   }
 
   return (
@@ -99,7 +143,13 @@ export function PaymentsPage() {
         <p className="empty panel">אין סטודיוים עם שעות בחודש זה — אין מה לכלול בתשלום.</p>
       ) : (
         <ul className="list panel">
-          {summaries.map((summary) => (
+          {summaries.map((summary) => {
+            const activeType: DocumentType =
+              summary.paymentStatus === 'confirmed' ? 'receipt' : 'invoice'
+            const remaining = remainingSummaryFor(summary, activeType)
+            const remainingAmount = remaining?.amount ?? 0
+            const coveredAmount = Math.round((summary.amount - remainingAmount) * 100) / 100
+            return (
             <li key={summary.studioId} className="list-item">
               <span className="color-dot" style={{ background: studioColor(summary.studioId) }} />
               <div className="list-item__body">
@@ -115,6 +165,12 @@ export function PaymentsPage() {
                     ? ` · ${summary.travelDays} נסיעות × ${formatILS(summary.travelPay)}`
                     : ''}
                 </p>
+                {coveredAmount > 0 && (
+                  <p className="list-item__meta">
+                    כבר קובל: {formatILS(coveredAmount)}
+                    {remainingAmount > 0 ? ` · נותר: ${formatILS(remainingAmount)}` : ' · הכול קובל'}
+                  </p>
+                )}
               </div>
               <p className="amount">{formatILS(summary.amount)}</p>
               <div className="list-item__actions">
@@ -136,23 +192,24 @@ export function PaymentsPage() {
                 )}
                 {summary.paymentStatus === 'confirmed' ? (
                   <IconButton
-                    label="הפק קבלה"
+                    label={coveredAmount > 0 ? 'הפק קבלה על היתרה' : 'הפק קבלה'}
                     icon="moneyIn"
                     variant="primary"
-                    disabled={!business || summary.amount <= 0}
-                    onClick={() => void issueForSummary(summary, 'receipt')}
+                    disabled={!business || remainingAmount <= 0}
+                    onClick={() => void issueRemaining(summary, 'receipt')}
                   />
                 ) : (
                   <IconButton
-                    label="הפק חשבונית עסקה"
+                    label={coveredAmount > 0 ? 'הפק חשבונית על היתרה' : 'הפק חשבונית עסקה'}
                     icon="document"
-                    disabled={!business || summary.amount <= 0}
-                    onClick={() => void issueForSummary(summary, 'invoice')}
+                    disabled={!business || remainingAmount <= 0}
+                    onClick={() => void issueRemaining(summary, 'invoice')}
                   />
                 )}
               </div>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
       {!business && summaries.length > 0 && (
@@ -161,6 +218,8 @@ export function PaymentsPage() {
           בהגדרות.
         </p>
       )}
+
+      <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
     </div>
   )
 }

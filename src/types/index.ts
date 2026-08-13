@@ -139,8 +139,12 @@ export interface FinancialDocument {
   relatedNumber?: number
   /** For cancellation/refund — original document type (for display formatting). */
   relatedType?: DocumentType
-  /** For monthly auto-generated receipts tied to a studio's month. */
-  sourceRef?: { studioId: string; yearMonth: string; paymentId?: string }
+  /**
+   * For monthly auto-generated documents tied to a studio's month.
+   * `entryIds` are the HourEntry ids this document covers — used to compute the
+   * un-covered "remaining" entries so a later document bills only the delta.
+   */
+  sourceRef?: { studioId: string; yearMonth: string; paymentId?: string; entryIds?: string[] }
   note?: string
   /** Immutable snapshot of the business identity at issue time. */
   business: BusinessProfile

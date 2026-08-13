@@ -31,9 +31,13 @@ import type {
   DocumentPayment,
   DocumentType,
   FinancialDocument,
+  HourEntry,
   Lesson,
   PaymentMethod,
 } from '../types'
+
+/** Loaded detail behind an expanded studio-month document. */
+type DocDetail = { lessons: Lesson[]; entries: HourEntry[] }
 
 type ItemForm = { description: string; quantity: string; unitPrice: string }
 
@@ -77,8 +81,8 @@ export function DocumentsPage() {
   const [ledgerMonth, setLedgerMonth] = useState<string | null>(null)
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null)
   // Lazily-loaded performed lessons per expanded document ('loading' while fetching).
-  const [lessonsByDoc, setLessonsByDoc] = useState<Record<string, Lesson[] | 'loading'>>({})
-  // Document ids whose lessons we've already started fetching (dedupe, no re-fetch).
+  const [detailByDoc, setDetailByDoc] = useState<Record<string, DocDetail | 'loading'>>({})
+  // Document ids whose detail we've already started fetching (dedupe, no re-fetch).
   const fetchedLessonsRef = useRef<Set<string>>(new Set())
   const [preview, setPreview] = useState(false)
   // True only while rasterizing for WhatsApp/PDF, so the delivered copy is
@@ -123,9 +127,9 @@ export function DocumentsPage() {
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
   }
 
-  // Load the performed lessons behind an expanded studio-month document.
-  // Note: `lessonsByDoc` is deliberately NOT a dependency — including it made
-  // the "loading" state-update re-run the effect and cancel the in-flight fetch
+  // Load the lessons + hour entries behind an expanded studio-month document.
+  // Note: `detailByDoc` is deliberately NOT a dependency — including it made the
+  // "loading" state-update re-run the effect and cancel the in-flight fetch
   // (worked with the synchronous local repo, hung on async Firestore). We dedupe
   // with a ref and always resolve the state.
   useEffect(() => {
@@ -135,19 +139,19 @@ export function DocumentsPage() {
     const source = target?.sourceRef
     if (!source || fetchedLessonsRef.current.has(docId)) return
     fetchedLessonsRef.current.add(docId)
-    setLessonsByDoc((m) => ({ ...m, [docId]: 'loading' }))
-    getRepository()
-      .listLessons(user.uid, source.yearMonth)
-      .then((list) => {
-        const performed = list.filter(
-          (l) => l.studioId === source.studioId && l.status !== 'cancelled',
-        )
-        setLessonsByDoc((m) => ({ ...m, [docId]: performed }))
+    setDetailByDoc((m) => ({ ...m, [docId]: 'loading' }))
+    const repo = getRepository()
+    Promise.all([
+      repo.listLessons(user.uid, source.yearMonth),
+      repo.listHourEntries(user.uid, source.yearMonth),
+    ])
+      .then(([lessons, entries]) => {
+        setDetailByDoc((m) => ({ ...m, [docId]: { lessons, entries } }))
       })
       .catch(() => {
         // Allow a retry on a later expand.
         fetchedLessonsRef.current.delete(docId)
-        setLessonsByDoc((m) => ({ ...m, [docId]: [] }))
+        setDetailByDoc((m) => ({ ...m, [docId]: { lessons: [], entries: [] } }))
       })
   }, [expandedDocId, user, documents])
 
@@ -169,31 +173,42 @@ export function DocumentsPage() {
   // Expanded-row content: the actual performed lessons for a studio-month
   // receipt, otherwise the document's own line items.
   const renderDetail = (doc: FinancialDocument) => {
-    const lessons = doc.sourceRef ? lessonsByDoc[doc.id] : undefined
-    if (lessons === 'loading') {
+    const ref = doc.sourceRef
+    const detail = ref ? detailByDoc[doc.id] : undefined
+    if (detail === 'loading') {
       return <p className="doc-detail__note">טוען שיעורים…</p>
     }
-    if (Array.isArray(lessons) && lessons.length > 0) {
-      return (
-        <>
-          <p className="doc-detail__heading">שיעורים שבוצעו בפועל</p>
-          <div className="doc-detail__list">
-            {lessons.map((lesson) => (
-              <div key={lesson.id} className="doc-detail__row doc-detail__row--lesson">
-                <span>
-                  {formatShortDate(lesson.startAt)} · {lesson.title}
-                  {lesson.isSwap && ' · החלפה'}
-                </span>
-                <span>{lesson.durationHours} שע׳</span>
-              </div>
-            ))}
-          </div>
-          {doc.note && <p className="doc-detail__note">{doc.note}</p>}
-        </>
-      )
-    }
-    if (doc.sourceRef && Array.isArray(lessons)) {
-      // Loaded, but no lessons linked to this studio-month.
+    if (ref && detail) {
+      const lessonById = new Map(detail.lessons.map((lesson) => [lesson.id, lesson]))
+      // Entries this document covers: by entryIds when present, else the whole
+      // studio-month (legacy documents issued before delta billing).
+      const covered = detail.entries
+        .filter(
+          (entry) =>
+            entry.studioId === ref.studioId &&
+            (ref.entryIds ? ref.entryIds.includes(entry.id) : true),
+        )
+        .sort((a, b) => a.date.localeCompare(b.date))
+      if (covered.length > 0) {
+        return (
+          <>
+            <p className="doc-detail__heading">שיעורים שבוצעו בפועל</p>
+            <div className="doc-detail__list">
+              {covered.map((entry) => (
+                <div key={entry.id} className="doc-detail__row doc-detail__row--lesson">
+                  <span>
+                    {formatShortDate(entry.date)} ·{' '}
+                    {entry.lessonId ? (lessonById.get(entry.lessonId)?.title ?? 'שיעור') : 'שעות ידניות'}
+                    {entry.isSwap && ' · החלפה'}
+                  </span>
+                  <span>{entry.hours} שע׳</span>
+                </div>
+              ))}
+            </div>
+            {doc.note && <p className="doc-detail__note">{doc.note}</p>}
+          </>
+        )
+      }
       return <p className="doc-detail__note">לא נמצאו שיעורים מקושרים לחודש זה.</p>
     }
     return (

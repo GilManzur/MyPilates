@@ -3,14 +3,33 @@ import {
   amountForHours,
   amountForTravel,
   buildMonthSummaries,
+  coverageForStudioMonth,
   filterHoursForMonth,
   hoursFromLesson,
   pendingAmount,
+  remainingEntriesForStudioMonth,
   totalAmount,
   totalHoursForStudio,
   workDaysForStudio,
 } from './calculations'
-import type { HourEntry, Payment, Studio } from '../../types'
+import type { FinancialDocument, HourEntry, Payment, Studio } from '../../types'
+
+function makeDoc(over: Partial<FinancialDocument> & Pick<FinancialDocument, 'type'>): FinancialDocument {
+  return {
+    id: over.id ?? 'doc1',
+    number: over.number ?? 1,
+    type: over.type,
+    status: over.status ?? 'issued',
+    issuedAt: '2026-08-10T00:00:00.000Z',
+    createdAt: '2026-08-10T00:00:00.000Z',
+    recipient: { name: 'סטודיו גלים', studioId: 's1' },
+    lineItems: [],
+    total: 0,
+    currency: 'ILS',
+    business: { legalName: 'עסק', taxId: '1' },
+    sourceRef: over.sourceRef,
+  }
+}
 
 const studios: Studio[] = [
   {
@@ -267,5 +286,39 @@ describe('buildMonthSummaries', () => {
       totalHours: 3,
       amount: 450,
     })
+  })
+})
+
+describe('studio-month coverage (delta billing)', () => {
+  const ref = (entryIds?: string[]) => ({ studioId: 's1', yearMonth: '2026-08', entryIds })
+
+  it('remaining excludes entries already covered by an issued receipt', () => {
+    const docs = [makeDoc({ type: 'receipt', sourceRef: ref(['h1']) })]
+    const remaining = remainingEntriesForStudioMonth(entries, docs, 's1', '2026-08', 'receipt')
+    expect(remaining.map((e) => e.id)).toEqual(['h2'])
+  })
+
+  it('coverage is per document type (a receipt does not cover an invoice)', () => {
+    const docs = [makeDoc({ type: 'receipt', sourceRef: ref(['h1']) })]
+    const remainingInvoice = remainingEntriesForStudioMonth(entries, docs, 's1', '2026-08', 'invoice')
+    expect(remainingInvoice.map((e) => e.id)).toEqual(['h1', 'h2'])
+  })
+
+  it('a cancelled receipt returns its entries to remaining (recoverable)', () => {
+    const docs = [makeDoc({ type: 'receipt', status: 'cancelled', sourceRef: ref(['h1']) })]
+    const remaining = remainingEntriesForStudioMonth(entries, docs, 's1', '2026-08', 'receipt')
+    expect(remaining.map((e) => e.id)).toEqual(['h1', 'h2'])
+  })
+
+  it('a legacy whole-month document (no entryIds) covers everything', () => {
+    const docs = [makeDoc({ type: 'receipt', sourceRef: ref(undefined) })]
+    const { legacyFull } = coverageForStudioMonth(docs, 's1', '2026-08', 'receipt')
+    expect(legacyFull).toBe(true)
+    expect(remainingEntriesForStudioMonth(entries, docs, 's1', '2026-08', 'receipt')).toEqual([])
+  })
+
+  it('with no documents, everything is remaining', () => {
+    const remaining = remainingEntriesForStudioMonth(entries, [], 's1', '2026-08', 'receipt')
+    expect(remaining.map((e) => e.id)).toEqual(['h1', 'h2'])
   })
 })

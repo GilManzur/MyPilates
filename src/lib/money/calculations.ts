@@ -1,4 +1,12 @@
-import type { HourEntry, Lesson, Payment, Studio, StudioMonthSummary } from '../../types'
+import type {
+  DocumentType,
+  FinancialDocument,
+  HourEntry,
+  Lesson,
+  Payment,
+  Studio,
+  StudioMonthSummary,
+} from '../../types'
 
 export function hoursFromLesson(lesson: Pick<Lesson, 'startAt' | 'endAt' | 'durationHours'>): number {
   if (lesson.durationHours > 0) return roundHours(lesson.durationHours)
@@ -154,6 +162,52 @@ export function pendingAmount(summaries: StudioMonthSummary[]): number {
       .filter((item) => item.paymentStatus !== 'confirmed')
       .reduce((sum, item) => sum + item.amount, 0) * 100,
   ) / 100
+}
+
+/**
+ * Coverage of a studio-month by already-issued documents of one type.
+ * Sums the `entryIds` of every issued (non-cancelled) document of `docType`
+ * whose sourceRef matches. A legacy document (sourceRef but no entryIds) is
+ * treated as covering the whole studio-month (`legacyFull`), so we never
+ * re-bill entries that an old whole-month document already covered.
+ */
+export function coverageForStudioMonth(
+  documents: FinancialDocument[],
+  studioId: string,
+  yearMonth: string,
+  docType: DocumentType,
+): { entryIds: Set<string>; legacyFull: boolean } {
+  const entryIds = new Set<string>()
+  let legacyFull = false
+  for (const doc of documents) {
+    if (doc.status !== 'issued' || doc.type !== docType) continue
+    const ref = doc.sourceRef
+    if (!ref || ref.studioId !== studioId || ref.yearMonth !== yearMonth) continue
+    if (ref.entryIds && ref.entryIds.length > 0) {
+      ref.entryIds.forEach((id) => entryIds.add(id))
+    } else {
+      legacyFull = true
+    }
+  }
+  return { entryIds, legacyFull }
+}
+
+/**
+ * The hour entries of a studio-month not yet covered by a document of `docType`.
+ * Empty when a legacy whole-month document already covers it.
+ */
+export function remainingEntriesForStudioMonth(
+  entries: HourEntry[],
+  documents: FinancialDocument[],
+  studioId: string,
+  yearMonth: string,
+  docType: DocumentType,
+): HourEntry[] {
+  const { entryIds, legacyFull } = coverageForStudioMonth(documents, studioId, yearMonth, docType)
+  if (legacyFull) return []
+  return studioEntriesForMonth(entries, studioId, yearMonth).filter(
+    (entry) => !entryIds.has(entry.id),
+  )
 }
 
 export function currentYearMonth(date = new Date()): string {
