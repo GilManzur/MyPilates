@@ -5,15 +5,21 @@ import type { FinancialDocument } from '../../types'
 import { archiveReceiptPdf, elementToPdfBlob } from './documentPdf'
 
 /**
- * Backs up an issued receipt to Drive/Sheets, independently of any on-screen
+ * Backs up an issued document to Drive/Sheets, independently of any on-screen
  * viewer: it renders the document off-screen, rasterizes it to a PDF, and POSTs
  * it to the archive Apps Script. Fire-and-forget — safe to call from anywhere a
- * receipt is issued (documents page, payments page). No-ops when archiving is
+ * document is issued (documents page, payments page). No-ops when archiving is
  * not configured (VITE_ARCHIVE_WEBAPP_URL unset).
  */
-export async function archiveReceiptDocument(doc: FinancialDocument): Promise<void> {
-  if (!import.meta.env.VITE_ARCHIVE_WEBAPP_URL) return
+export async function archiveDocument(doc: FinancialDocument): Promise<void> {
   if (typeof document === 'undefined') return
+  if (!import.meta.env.VITE_ARCHIVE_WEBAPP_URL) {
+    console.warn(
+      '[archive] skipped — VITE_ARCHIVE_WEBAPP_URL is not set. Add it to .env and rebuild (npm run build) / restart the dev server.',
+    )
+    return
+  }
+  console.info('[archive] starting for', doc.type, doc.number)
 
   const host = document.createElement('div')
   // Keep it laid out (so it paints) but far off-screen and non-interactive.
