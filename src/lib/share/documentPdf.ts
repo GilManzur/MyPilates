@@ -133,16 +133,14 @@ export async function archiveReceiptPdf(
   if (!url) return { status: 'skipped' }
   try {
     const pdfBase64 = await blobToBase64(blob)
-    const resp = await fetch(url, {
+    await fetch(url, {
       method: 'POST',
-      mode: 'cors',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ token, pdfBase64, ...meta }),
     })
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => '')
-      return { status: 'error', error: `HTTP ${resp.status}: ${text}` }
-    }
+    // Apps Script web apps do not send CORS headers. `no-cors` yields an
+    // opaque response (status 0), so success means "the browser sent it".
     return { status: 'ok' }
   } catch (err) {
     return { status: 'error', error: err instanceof Error ? err.message : String(err) }
