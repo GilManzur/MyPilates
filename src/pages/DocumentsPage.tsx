@@ -232,64 +232,6 @@ export function DocumentsPage() {
     )
   }
 
-  const onShare = async (channel: ShareChannel) => {
-    if (!viewed) return
-    setSharing(true)
-    setShareNote('')
-    setMarkComputerized(true)
-    setCopyMode(true)
-    // Repaint the "העתק"/"מסמך ממוחשב" labels before we grab the node.
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve)),
-    )
-    const node = document
-      .getElementById('print-root')
-      ?.querySelector('.doc-print') as HTMLElement | null
-    if (!node) {
-      setMarkComputerized(false)
-      setCopyMode(false)
-      setSharing(false)
-      return
-    }
-    // Force the full page-width layout so the receipt is never clipped in the PDF.
-    node.classList.add('doc-print--capture')
-    try {
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      )
-      const blob = await elementToPdfBlob(node)
-      const number = formatDocumentNumber(viewed.type, viewed.number)
-      const label = documentTypeLabel(viewed.type)
-      // Pre-fill the recipient from the linked studio's saved contact.
-      const studio = viewed.recipient.studioId
-        ? studios.find((s) => s.id === viewed.recipient.studioId)
-        : undefined
-      const outcome = await shareDocumentPdf({
-        blob,
-        fileName: `${docFileBase(viewed)}.pdf`,
-        title: `${label} ${number}`,
-        text: `${label} מס׳ ${number} מאת ${viewed.business.legalName} · סה״כ ${formatILSExact(viewed.total)}`,
-        channel,
-        phone: studio?.phone ?? viewed.recipient.phone,
-        email: studio?.email,
-      })
-      if (outcome === 'fallback') {
-        setShareNote(
-          channel === 'email'
-            ? 'הדפדפן לא תומך בשיתוף קבצים — הקובץ ירד למכשיר ונפתחה טיוטת מייל לצירופו.'
-            : 'הדפדפן לא תומך בשיתוף קבצים — הקובץ ירד למכשיר ונפתחה שיחת וואטסאפ.',
-        )
-      }
-    } catch {
-      setShareNote('אירעה שגיאה בהכנת הקובץ. נסי שוב.')
-    } finally {
-      node.classList.remove('doc-print--capture')
-      setMarkComputerized(false)
-      setCopyMode(false)
-      setSharing(false)
-    }
-  }
-
   const onShareNative = async () => {
     if (!viewed) return
     setSharing(true)

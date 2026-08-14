@@ -72,6 +72,7 @@ export function PaymentMethodSheet({
     currency: 'ILS',
     payments: [payment],
     business: request.business,
+    createdAt: new Date().toISOString(),
   }
 
   return (

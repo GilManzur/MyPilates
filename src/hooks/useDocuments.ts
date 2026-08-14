@@ -4,7 +4,7 @@ import type { DocumentCounters, DocumentDraft } from '../lib/data/types'
 import type { FinancialDocument } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { archiveDocument } from '../lib/share/archiveReceipt'
-import { dequeueArchive, enqueueArchive, getPendingArchives, initArchiveQueueListeners } from '../lib/share/archiveQueue'
+import { dequeueArchive, enqueueArchive } from '../lib/share/archiveQueue'
 
 const EMPTY_COUNTERS: DocumentCounters = {
   documentNumber: 0,
