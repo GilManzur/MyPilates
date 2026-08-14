@@ -4,6 +4,7 @@ import type { DocumentCounters, DocumentDraft } from '../lib/data/types'
 import type { FinancialDocument } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { archiveDocument } from '../lib/share/archiveReceipt'
+import { dequeueArchive, enqueueArchive, getPendingArchives, initArchiveQueueListeners } from '../lib/share/archiveQueue'
 
 const EMPTY_COUNTERS: DocumentCounters = {
   documentNumber: 0,
@@ -39,12 +40,25 @@ export function useDocuments() {
     void refresh()
   }, [refresh])
 
+  const archiveWithQueue = async (doc: FinancialDocument): Promise<'ok' | 'queued'> => {
+    enqueueArchive(doc)
+    const result = await archiveDocument(doc)
+    if (result === 'ok') {
+      dequeueArchive(doc.id)
+      return 'ok'
+    }
+    return 'queued'
+  }
+
   const issue = async (draft: DocumentDraft) => {
     if (!user) return undefined
     const issued = await getRepository().issueDocument(user.uid, draft)
     await refresh()
-    // Back up every issued document to Drive/Sheets (no-op if not configured).
-    void archiveDocument(issued)
+    void archiveWithQueue(issued).then((r) => {
+      if (r === 'queued') {
+        console.warn('[archive] document queued for retry:', issued.id)
+      }
+    })
     return issued
   }
 
@@ -53,7 +67,11 @@ export function useDocuments() {
     if (!user) return undefined
     const issued = await getRepository().cancelDocument(user.uid, originalId, draft)
     await refresh()
-    void archiveDocument(issued)
+    void archiveWithQueue(issued).then((r) => {
+      if (r === 'queued') {
+        console.warn('[archive] document queued for retry:', issued.id)
+      }
+    })
     return issued
   }
 

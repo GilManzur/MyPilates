@@ -9,7 +9,7 @@ import { DocumentLedger } from '../components/DocumentLedger'
 import { SequenceCheck } from '../components/SequenceCheck'
 import { Overlay } from '../components/Overlay'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
-import { elementToPdfBlob, shareDocumentPdf, type ShareChannel } from '../lib/share/documentPdf'
+import { elementToPdfBlob, shareDocumentPdf, shareDocumentNative, type ShareChannel } from '../lib/share/documentPdf'
 import { useDocuments } from '../hooks/useDocuments'
 import { useAuth } from '../contexts/AuthContext'
 import { useViewMonth } from '../contexts/ViewMonthContext'
@@ -96,6 +96,7 @@ export function DocumentsPage() {
   const [copyMode, setCopyMode] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [shareNote, setShareNote] = useState('')
+  const [sharePicker, setSharePicker] = useState<{ blob: Blob; fileName: string; title: string; text: string } | null>(null)
 
   const openViewer = (id: string) => {
     // Viewing/printing shows the original ("מקור"); only sent copies are "העתק".
@@ -286,6 +287,70 @@ export function DocumentsPage() {
       setMarkComputerized(false)
       setCopyMode(false)
       setSharing(false)
+    }
+  }
+
+  const onShareNative = async () => {
+    if (!viewed) return
+    setSharing(true)
+    setShareNote('')
+    setMarkComputerized(true)
+    setCopyMode(true)
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    )
+    const node = document
+      .getElementById('print-root')
+      ?.querySelector('.doc-print') as HTMLElement | null
+    if (!node) {
+      setMarkComputerized(false)
+      setCopyMode(false)
+      setSharing(false)
+      return
+    }
+    node.classList.add('doc-print--capture')
+    try {
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      )
+      const blob = await elementToPdfBlob(node)
+      const number = formatDocumentNumber(viewed.type, viewed.number)
+      const label = documentTypeLabel(viewed.type)
+      const fileName = `${docFileBase(viewed)}.pdf`
+      const title = `${label} ${number}`
+      const text = `${label} מס׳ ${number} מאת ${viewed.business.legalName} · סה״כ ${formatILSExact(viewed.total)}`
+      const outcome = await shareDocumentNative({ blob, fileName, title, text })
+      if (outcome === 'unsupported') {
+        setSharePicker({ blob, fileName, title, text })
+      }
+    } catch {
+      setShareNote('אירעה שגיאה בהכנת הקובץ. נסי שוב.')
+    } finally {
+      node.classList.remove('doc-print--capture')
+      setMarkComputerized(false)
+      setCopyMode(false)
+      setSharing(false)
+    }
+  }
+
+  const onPickChannel = async (channel: ShareChannel) => {
+    if (!sharePicker || !viewed) return
+    const studio = viewed.recipient.studioId
+      ? studios.find((s) => s.id === viewed.recipient.studioId)
+      : undefined
+    const outcome = await shareDocumentPdf({
+      ...sharePicker,
+      channel,
+      phone: studio?.phone ?? viewed.recipient.phone,
+      email: studio?.email,
+    })
+    setSharePicker(null)
+    if (outcome === 'fallback') {
+      setShareNote(
+        channel === 'email'
+          ? 'הקובץ ירד למכשיר ונפתחה טיוטת מייל לצירופו.'
+          : 'הקובץ ירד למכשיר ונפתחה שיחת וואטסאפ.',
+      )
     }
   }
 
@@ -571,8 +636,9 @@ export function DocumentsPage() {
                                   <span className="doc-row__void"> · מבוטל</span>
                                 )}
                               </span>
+                              <span className="doc-row__recipient-mobile">{doc.recipient.name}</span>
                             </td>
-                            <td>{doc.recipient.name}</td>
+                            <td className="doc-row__recipient">{doc.recipient.name}</td>
                             <td className="doc-row__amount">{formatILSExact(doc.total)}</td>
                             <td
                               className="doc-row__actions"
@@ -871,20 +937,12 @@ export function DocumentsPage() {
           onClick={() => setViewerId(null)}
         >
           <div className="doc-viewer__bar" onClick={(e) => e.stopPropagation()}>
-            <Button variant="secondary" onClick={() => setViewerId(null)}>
+            <Button className="doc-viewer__close" variant="secondary" onClick={() => setViewerId(null)}>
               סגירה
             </Button>
-            <Button onClick={onPrint}>הדפסה / שמירה כ‑PDF</Button>
-            <Button
-              className="btn--whatsapp"
-              onClick={() => void onShare('whatsapp')}
-              disabled={sharing}
-            >
-              <Icon name="whatsapp" />
-              {sharing ? 'מכין…' : 'שליחה בוואטסאפ'}
-            </Button>
-            <Button variant="secondary" onClick={() => void onShare('email')} disabled={sharing}>
-              שליחה במייל
+            <Button onClick={onPrint}>הדפסה / PDF</Button>
+            <Button onClick={() => void onShareNative()} disabled={sharing}>
+              {sharing ? 'מכין…' : 'שיתוף'}
             </Button>
           </div>
           {shareNote && (
@@ -943,6 +1001,31 @@ export function DocumentsPage() {
             onYearMonthChange={setYearMonth}
             onClose={() => setLedgerOpen(false)}
           />
+        </Overlay>
+      )}
+
+      {sharePicker && (
+        <Overlay onClose={() => setSharePicker(null)}>
+          <div className="sheet-backdrop" onClick={() => setSharePicker(null)}>
+            <div
+              className="sheet share-picker"
+              role="dialog"
+              aria-modal="true"
+              aria-label="בחרי אמצעי שיתוף"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>שיתוף המסמך</h2>
+              <p className="form-hint">הדפדפן לא תומך בשיתוף ישיר. בחרי ערוץ:</p>
+              <div className="row-actions">
+                <Button onClick={() => void onPickChannel('whatsapp')}>
+                  וואטסאפ
+                </Button>
+                <Button variant="secondary" onClick={() => void onPickChannel('email')}>
+                  מייל
+                </Button>
+              </div>
+            </div>
+          </div>
         </Overlay>
       )}
 

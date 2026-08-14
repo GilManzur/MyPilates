@@ -69,11 +69,10 @@ export function MonthCalendar({
     return map
   }, [lessons])
 
-  const expandedWeekDates = useMemo(() => {
-    const weekKeys = weekDateKeys(expandedWeekStartKey())
-    const hasCrowdedDay = weekKeys.some((key) => (lessonsByDate[key]?.length ?? 0) > 1)
-    return hasCrowdedDay ? new Set(weekKeys) : new Set<string>()
-  }, [lessonsByDate])
+  const expandedWeekDates = useMemo(
+    () => new Set(weekDateKeys(expandedWeekStartKey())),
+    [],
+  )
 
   const today = todayLocalKey()
 
@@ -136,6 +135,23 @@ export function MonthCalendar({
                   {hiddenHours > 0 && (
                     <span className="month-calendar__dots-more">+{hiddenHours}</span>
                   )}
+                </div>
+              )}
+              {isExpandedWeek && dayLessons.length > 0 && (
+                <div className="month-calendar__studio-labels" aria-hidden="true">
+                  {[...new Map(dayLessons.map((l) => [l.studioId, l])).values()].map((lesson) => {
+                    const color = studioMap[lesson.studioId]?.color ?? DEFAULT_STUDIO_COLOR
+                    const name = studioMap[lesson.studioId]?.name ?? 'סטודיו'
+                    return (
+                      <span
+                        key={lesson.studioId}
+                        className="month-calendar__studio-label"
+                        style={{ color }}
+                      >
+                        {name}
+                      </span>
+                    )
+                  })}
                 </div>
               )}
               <div className="month-calendar__events">

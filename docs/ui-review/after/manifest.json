@@ -1,0 +1,34 @@
+[
+  {
+    "file": "01-calendar-mobile.png",
+    "note": "יומן — שבוע מורחב עם שמות סטודיו"
+  },
+  {
+    "file": "02-documents-mobile.png",
+    "note": "מסמכים — כרטיסים במובייל"
+  },
+  {
+    "file": "03-doc-viewer.png",
+    "note": "חלון צפייה — 3 כפתורים"
+  },
+  {
+    "file": "04-payments-mobile.png",
+    "note": "תשלומים — כפתור הפק קבלה"
+  },
+  {
+    "file": "05-payment-method-step1.png",
+    "note": "בחירת אמצעי תשלום — שלב 1"
+  },
+  {
+    "file": "06-payment-method-step2.png",
+    "note": "תצוגה מקדימה — שלב 2"
+  },
+  {
+    "file": "07-confirm-cancel.png",
+    "note": "אישור ביטול מסמך (ConfirmSheet)"
+  },
+  {
+    "file": "08-documents-desktop.png",
+    "note": "מסמכים — טבלה בדסקטופ"
+  }
+]

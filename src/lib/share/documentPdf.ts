@@ -52,7 +52,7 @@ export function normalizeIsraeliPhone(raw?: string): string | undefined {
   return digits
 }
 
-export type ShareOutcome = 'shared' | 'fallback'
+export type ShareOutcome = 'shared' | 'fallback' | 'unsupported'
 export type ShareChannel = 'whatsapp' | 'email'
 
 /**
@@ -127,21 +127,25 @@ export type ArchiveOutcome = 'ok' | 'skipped' | 'error'
 export async function archiveReceiptPdf(
   blob: Blob,
   meta: ReceiptArchiveMeta,
-): Promise<ArchiveOutcome> {
+): Promise<{ status: ArchiveOutcome; error?: string }> {
   const url = import.meta.env.VITE_ARCHIVE_WEBAPP_URL as string | undefined
   const token = (import.meta.env.VITE_ARCHIVE_TOKEN as string | undefined) ?? ''
-  if (!url) return 'skipped'
+  if (!url) return { status: 'skipped' }
   try {
     const pdfBase64 = await blobToBase64(blob)
-    await fetch(url, {
+    const resp = await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
+      mode: 'cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ token, pdfBase64, ...meta }),
     })
-    return 'ok'
-  } catch {
-    return 'error'
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      return { status: 'error', error: `HTTP ${resp.status}: ${text}` }
+    }
+    return { status: 'ok' }
+  } catch (err) {
+    return { status: 'error', error: err instanceof Error ? err.message : String(err) }
   }
 }
 
@@ -156,6 +160,31 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error('failed to read pdf blob'))
     reader.readAsDataURL(blob)
   })
+}
+
+/**
+ * Shares the PDF via the native share sheet. Returns 'unsupported' when the
+ * browser cannot share files, so the caller can offer a channel picker.
+ */
+export async function shareDocumentNative(opts: {
+  blob: Blob
+  fileName: string
+  title: string
+  text: string
+}): Promise<ShareOutcome> {
+  const { blob, fileName, title, text } = opts
+  const file = new File([blob], fileName, { type: 'application/pdf' })
+  const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean }
+
+  if (typeof nav.share === 'function' && nav.canShare?.({ files: [file] })) {
+    try {
+      await nav.share({ files: [file], title, text })
+      return 'shared'
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return 'shared'
+    }
+  }
+  return 'unsupported'
 }
 
 function downloadBlob(blob: Blob, fileName: string) {

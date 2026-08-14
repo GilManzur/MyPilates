@@ -2,44 +2,45 @@ import { createRoot } from 'react-dom/client'
 import { DocumentPrint } from '../../components/DocumentPrint'
 import { documentTypeLabel, formatDocumentNumber } from '../documents'
 import type { FinancialDocument } from '../../types'
+import type { ArchiveOutcome } from './documentPdf'
 import { archiveReceiptPdf, elementToPdfBlob } from './documentPdf'
 
-/**
- * Backs up an issued document to Drive/Sheets, independently of any on-screen
- * viewer: it renders the document off-screen, rasterizes it to a PDF, and POSTs
- * it to the archive Apps Script. Fire-and-forget — safe to call from anywhere a
- * document is issued (documents page, payments page). No-ops when archiving is
- * not configured (VITE_ARCHIVE_WEBAPP_URL unset).
- */
-export async function archiveDocument(doc: FinancialDocument): Promise<void> {
-  if (typeof document === 'undefined') return
+export async function archiveDocument(doc: FinancialDocument): Promise<ArchiveOutcome> {
+  if (typeof document === 'undefined') return 'skipped'
   if (!import.meta.env.VITE_ARCHIVE_WEBAPP_URL) {
     console.warn(
-      '[archive] skipped — VITE_ARCHIVE_WEBAPP_URL is not set. Add it to .env and rebuild (npm run build) / restart the dev server.',
+      '[archive] skipped — VITE_ARCHIVE_WEBAPP_URL is not set.',
     )
-    return
+    return 'skipped'
   }
   console.info('[archive] starting for', doc.type, doc.number)
 
   const host = document.createElement('div')
-  // Keep it laid out (so it paints) but far off-screen and non-interactive.
   host.style.cssText =
     'position:fixed;left:-10000px;top:0;width:640px;background:#fff;pointer-events:none;z-index:-1;'
   document.body.appendChild(host)
   const root = createRoot(host)
 
+  let outcome: ArchiveOutcome = 'error'
+
   const capture = async () => {
     root.render(<DocumentPrint document={doc} />)
-    // Let it paint (and give the logo image a moment to load) before capture.
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    const node = host.querySelector('.doc-print') as HTMLElement | null
+    // Poll for the rendered node instead of a fixed timeout.
+    let node: HTMLElement | null = null
+    for (let i = 0; i < 20; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      node = host.querySelector('.doc-print') as HTMLElement | null
+      if (node) break
+    }
     if (!node) throw new Error('archive: render node not found')
+    // Give the logo a moment to load after the node is present.
+    await new Promise((resolve) => setTimeout(resolve, 300))
     node.classList.add('doc-print--capture')
 
     const blob = await elementToPdfBlob(node)
     const name = doc.business.ownerFullName?.trim() || doc.business.legalName
     const number = formatDocumentNumber(doc.type, doc.number)
-    await archiveReceiptPdf(blob, {
+    const result = await archiveReceiptPdf(blob, {
       fileName: `${documentTypeLabel(doc.type)} ${number} - ${name}.pdf`,
       yearMonth: doc.issuedAt.slice(0, 7),
       number,
@@ -48,11 +49,15 @@ export async function archiveDocument(doc: FinancialDocument): Promise<void> {
       recipientName: doc.recipient.name,
       total: doc.total,
     })
-    console.info('[archive] receipt sent to Drive/Sheets:', number)
+    outcome = result.status
+    if (result.status === 'ok') {
+      console.info('[archive] receipt sent to Drive/Sheets:', number)
+    } else if (result.error) {
+      console.warn('[archive] failed:', result.error)
+    }
   }
 
   try {
-    // Guard against a hung rasterization so the off-screen node is always cleaned up.
     await Promise.race([
       capture(),
       new Promise((_, reject) =>
@@ -61,8 +66,10 @@ export async function archiveDocument(doc: FinancialDocument): Promise<void> {
     ])
   } catch (err) {
     console.warn('[archive] receipt backup failed:', err)
+    outcome = 'error'
   } finally {
     root.unmount()
     host.remove()
   }
+  return outcome
 }

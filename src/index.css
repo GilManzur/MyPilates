@@ -881,6 +881,20 @@ h2 {
   display: none;
 }
 
+.sheet--payment {
+  max-width: 480px;
+  gap: 12px;
+}
+
+.payment-sheet__preview {
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  background: #fff;
+}
+
 .confirm-message {
   margin: 0;
   color: var(--ink-soft);
@@ -1078,16 +1092,36 @@ h2 {
   font-weight: 700;
   color: var(--ink-soft);
 }
-/* Mobile: dots only. */
+/* Studio name labels — visible only in the expanded week on mobile. */
+.month-calendar__studio-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-inline-start: 2px;
+  margin-top: 2px;
+}
+.month-calendar__studio-label {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+/* Mobile: dots + studio labels. Event chips hidden. */
 .month-calendar__events {
   display: none;
 }
-/* Crowded-week expansion only helps the text chips — keep cells uniform on phones. */
 .month-calendar__cell.is-expanded-week {
-  min-height: 40px;
+  min-height: 60px;
 }
 @media (min-width: 481px) {
   .month-calendar__dots {
+    display: none;
+  }
+  .month-calendar__studio-labels {
     display: none;
   }
   .month-calendar__events {
@@ -1260,19 +1294,25 @@ h2 {
   top: 0;
   z-index: 1;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   max-width: 640px;
-  justify-content: flex-end;
+  justify-content: center;
+  padding: 10px 0;
+  background: rgba(26, 36, 32, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+}
+.doc-viewer__bar .btn {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+.doc-viewer__close {
+  margin-inline-end: auto;
 }
 
-.btn--whatsapp {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #25d366;
-  color: #08331b;
+.share-picker {
+  text-align: center;
 }
 
 .doc-viewer__note {
@@ -1693,23 +1733,13 @@ h2 {
 
 /* Documents table with expandable rows. */
 .doc-table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: visible;
 }
-.doc-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-.doc-table thead th {
-  text-align: start;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-}
+/* ── Mobile: card layout (no horizontal scroll) ── */
+.doc-table,
+.doc-table tbody { display: block; }
+.doc-table thead { display: none; }
+.doc-group > td { display: block; }
 .doc-group > td {
   padding: 14px 10px 6px;
   font-size: 13px;
@@ -1721,16 +1751,25 @@ h2 {
 .doc-row {
   cursor: pointer;
   border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0 8px;
+  padding: 10px;
+  align-items: center;
 }
 .doc-row:hover {
   background: color-mix(in srgb, var(--brand-2) 8%, transparent);
 }
 .doc-row > td {
-  padding: 10px;
+  display: block;
+  padding: 0;
   vertical-align: middle;
 }
 .doc-row__toggle {
-  width: 34px;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: auto;
   color: var(--ink-soft);
 }
 .doc-row__toggle span {
@@ -1739,6 +1778,10 @@ h2 {
 }
 .doc-row__toggle span.open {
   transform: rotate(180deg);
+}
+.doc-row__doc {
+  grid-column: 2;
+  grid-row: 1;
 }
 .doc-row__doc strong {
   font-weight: 700;
@@ -1749,7 +1792,15 @@ h2 {
   font-size: 12px;
   color: var(--ink-soft);
 }
+.doc-row__recipient-mobile {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.doc-row > .doc-row__recipient { display: none; }
 .doc-row__amount {
+  grid-column: 3;
+  grid-row: 1;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   white-space: nowrap;
@@ -1760,15 +1811,20 @@ h2 {
   font-size: 12px;
 }
 .doc-row__actions {
-  white-space: nowrap;
-  text-align: end;
+  grid-column: 2 / 4;
+  grid-row: 2;
+  white-space: normal;
+  text-align: start;
+  padding-top: 6px;
 }
 .doc-row__actions > * {
   display: inline-flex;
   gap: 4px;
 }
+.doc-detail { display: block; }
 .doc-detail > td {
-  padding: 0 10px 12px 44px;
+  display: block;
+  padding: 0 10px 12px 32px;
   background: color-mix(in srgb, var(--brand-2) 5%, transparent);
 }
 .doc-detail__list {
@@ -2164,6 +2220,34 @@ h2 {
     break-inside: avoid;
     margin-bottom: 10px;
   }
+
+  /* ---- Documents table: restore regular table on desktop ---- */
+  .doc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .doc-table { display: table; }
+  .doc-table thead { display: table-header-group; }
+  .doc-table thead th {
+    text-align: start;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .doc-table tbody { display: table-row-group; }
+  .doc-row,
+  .doc-group,
+  .doc-detail { display: table-row; }
+  .doc-row { padding: 0; }
+  .doc-row > td { display: table-cell; padding: 10px; }
+  .doc-group { display: table-row; }
+  .doc-group > td { display: table-cell; }
+  .doc-row__toggle { width: 34px; }
+  .doc-row__recipient-mobile { display: none; }
+  .doc-row > .doc-row__recipient { display: table-cell; }
+  .doc-row__actions { white-space: nowrap; text-align: end; padding-top: 0; }
+  .doc-detail > td { display: table-cell; padding: 0 10px 12px 44px; }
+  .doc-group > td { display: table-cell; }
 
   /* ---- Bottom sheets → centered modal dialogs ---- */
   .sheet-backdrop {

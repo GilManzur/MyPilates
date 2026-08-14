@@ -3,12 +3,17 @@ import { Link } from 'react-router-dom'
 import { IconButton } from '../components/IconButton'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { ConfirmSheet, type ConfirmRequest } from '../components/ConfirmSheet'
+import {
+  PaymentMethodSheet,
+  type PaymentSheetRequest,
+} from '../components/PaymentMethodSheet'
 import { useStudios } from '../hooks/useStudios'
 import { useHourEntries } from '../hooks/useHourEntries'
 import { usePayments } from '../hooks/usePayments'
 import { useDocuments } from '../hooks/useDocuments'
 import { useProfile } from '../hooks/useProfile'
 import type { DocumentDraft } from '../lib/data/types'
+import type { DocumentPayment } from '../types'
 import {
   buildMonthlyLineItems,
   documentTypeLabel,
@@ -37,6 +42,7 @@ export function PaymentsPage() {
   const { business } = useProfile()
   const [message, setMessage] = useState('')
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+  const [paymentSheet, setPaymentSheet] = useState<PaymentSheetRequest | null>(null)
 
   const summaries = useMemo(
     () => buildMonthSummaries(studios, entries, payments, yearMonth),
@@ -79,6 +85,26 @@ export function PaymentsPage() {
     const subset = buildMonthSummaries([studio], remaining, payments, yearMonth)[0]
     if (!subset || subset.amount <= 0) return
 
+    const lineItems = buildMonthlyLineItems(subset, formatMonthTitle(yearMonth))
+    const sourceRef = {
+      studioId: summary.studioId,
+      yearMonth,
+      entryIds: remaining.map((entry) => entry.id),
+      ...(summary.paymentId ? { paymentId: summary.paymentId } : {}),
+    }
+
+    if (type_ === 'receipt') {
+      setPaymentSheet({
+        studioName: summary.studioName,
+        studioId: summary.studioId,
+        amount: subset.amount,
+        lineItems,
+        business,
+        sourceRef,
+      })
+      return
+    }
+
     setConfirm({
       title: `להפיק ${documentTypeLabel(type_)} על ${formatILS(subset.amount)}?`,
       message: `עבור ${summary.studioName} · ${remaining.length} רשומות שעדיין לא התקבלו החודש. אפשר לבטל מאוחר יותר במסך המסמכים והשיעורים יחזרו ליתרה.`,
@@ -90,19 +116,11 @@ export function PaymentsPage() {
             type: type_,
             issuedAt: new Date().toISOString(),
             recipient: { name: summary.studioName, studioId: summary.studioId },
-            lineItems: buildMonthlyLineItems(subset, formatMonthTitle(yearMonth)),
+            lineItems,
             total: subset.amount,
             currency: 'ILS',
             business,
-            sourceRef: {
-              studioId: summary.studioId,
-              yearMonth,
-              entryIds: remaining.map((entry) => entry.id),
-              ...(summary.paymentId ? { paymentId: summary.paymentId } : {}),
-            },
-            ...(type_ === 'receipt'
-              ? { payments: [{ method: 'transfer' as const, amount: subset.amount }] }
-              : {}),
+            sourceRef,
           }
           const created = await issue(draft)
           if (created) {
@@ -113,6 +131,29 @@ export function PaymentsPage() {
         })()
       },
     })
+  }
+
+  const onPaymentConfirm = (payment: DocumentPayment) => {
+    if (!paymentSheet) return
+    void (async () => {
+      const draft: DocumentDraft = {
+        type: 'receipt',
+        issuedAt: new Date().toISOString(),
+        recipient: { name: paymentSheet.studioName, studioId: paymentSheet.studioId },
+        lineItems: paymentSheet.lineItems,
+        total: paymentSheet.amount,
+        currency: 'ILS',
+        business: paymentSheet.business,
+        sourceRef: paymentSheet.sourceRef,
+        payments: [payment],
+      }
+      const created = await issue(draft)
+      if (created) {
+        setMessage(
+          `קבלה מס׳ ${formatDocumentNumber('receipt', created.number)} הופקה עבור ${paymentSheet.studioName}`,
+        )
+      }
+    })()
   }
 
   /** Per-studio view model shared by the mobile cards and the desktop table. */
@@ -300,6 +341,11 @@ export function PaymentsPage() {
       )}
 
       <ConfirmSheet request={confirm} onClose={() => setConfirm(null)} />
+      <PaymentMethodSheet
+        request={paymentSheet}
+        onClose={() => setPaymentSheet(null)}
+        onConfirm={onPaymentConfirm}
+      />
     </div>
   )
 }
