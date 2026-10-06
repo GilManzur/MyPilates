@@ -61,7 +61,7 @@ export function DocumentLedger({
           <header className="doc-ledger__head">
             <div>
               <h1>{business.legalName}</h1>
-              <p>עוסק פטור · מס׳ עוסק/ת״ז: {business.taxId}</p>
+              <p>{business.taxStatusLabel?.trim() || 'עוסק פטור'} · מס׳ עוסק/ת״ז: {business.taxId}</p>
             </div>
             <div className="doc-ledger__meta">
               <span className="doc-ledger__nature">ריכוז מסמכים</span>

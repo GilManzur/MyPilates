@@ -11,6 +11,28 @@ import type { DocumentPayment, FinancialDocument } from '../types'
 /** Logo shown on printed documents; hidden gracefully if the asset is missing. */
 const LOGO_SRC = '/brand/logo-on-white.png'
 
+/** Generic document-shaped mark for businesses without their own logo. */
+function DocumentLogo() {
+  return (
+    <svg
+      className="doc-print__logo"
+      viewBox="0 0 48 56"
+      width="42"
+      height="49"
+      fill="none"
+      stroke="#14201b"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8 4h24l10 10v38H8z" />
+      <path d="M32 4v10h10" />
+      <path d="M15 28h18M15 36h18M15 44h10" />
+    </svg>
+  )
+}
+
 function formatDate(iso: string): string {
   return format(parseISO(iso), 'dd/MM/yyyy')
 }
@@ -58,16 +80,22 @@ export function DocumentPrint({
 
       <header className="doc-print__head">
         <div className="doc-print__business">
-          <img
-            className="doc-print__logo"
-            src={LOGO_SRC}
-            alt=""
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
+          {business.logo === 'document' ? (
+            <DocumentLogo />
+          ) : (
+            <img
+              className="doc-print__logo"
+              src={LOGO_SRC}
+              alt=""
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          )}
           <h1>{business.legalName}</h1>
-          <p>עוסק פטור · מס׳ עוסק/ת״ז: {business.taxId}</p>
+          <p>
+            {business.taxStatusLabel?.trim() || 'עוסק פטור'} · מס׳ עוסק/ת״ז: {business.taxId}
+          </p>
           {business.address && <p>{business.address}</p>}
           <p>
             {[business.phone, business.email].filter(Boolean).join(' · ')}
@@ -152,6 +180,7 @@ export function DocumentPrint({
       )}
 
       {doc.note && <p className="doc-print__note">{doc.note}</p>}
+      {business.footerNote && <p className="doc-print__note">{business.footerNote}</p>}
 
       {!draft && (
         <footer className="doc-print__foot">

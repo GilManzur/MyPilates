@@ -670,6 +670,11 @@ export function DocumentsPage() {
                       ...prev,
                       studioId,
                       recipientName: studio ? studio.name : prev.recipientName,
+                      // A selected studio replaces all recipient fields (empty if unset) so a
+                      // previous studio's details never leak; "— ללא —" keeps what was typed.
+                      recipientTaxId: studio ? (studio.taxId ?? '') : prev.recipientTaxId,
+                      recipientAddress: studio ? (studio.address ?? '') : prev.recipientAddress,
+                      recipientPhone: studio ? (studio.phone ?? '') : prev.recipientPhone,
                     }))
                   }}
                 >
