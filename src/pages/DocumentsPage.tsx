@@ -670,6 +670,9 @@ export function DocumentsPage() {
                       ...prev,
                       studioId,
                       recipientName: studio ? studio.name : prev.recipientName,
+                      recipientTaxId: studio?.taxId ?? prev.recipientTaxId,
+                      recipientAddress: studio?.address ?? prev.recipientAddress,
+                      recipientPhone: studio?.phone ?? prev.recipientPhone,
                     }))
                   }}
                 >

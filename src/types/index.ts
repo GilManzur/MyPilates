@@ -37,6 +37,9 @@ export interface Studio {
   /** Contact used to pre-fill WhatsApp / email when sending the studio a document. */
   phone?: string
   email?: string
+  /** ע.מ / ח.פ — printed on documents issued to this studio. */
+  taxId?: string
+  address?: string
   /** Fixed pay per work day at this studio. 0 = no travel pay. */
   travelPay: number
   /** Hourly rate for swap/replacement lessons. 0 = swap pay disabled. */

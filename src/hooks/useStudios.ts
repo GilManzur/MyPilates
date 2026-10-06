@@ -40,6 +40,8 @@ export function useStudios() {
     swapPay?: number
     phone?: string
     email?: string
+    taxId?: string
+    address?: string
   }) => {
     if (!user) return
     const existing = input.id ? studios.find((s) => s.id === input.id) : undefined
@@ -53,6 +55,8 @@ export function useStudios() {
         : (existing?.swapPay ?? 0)
     const phone = input.phone !== undefined ? input.phone.trim() : existing?.phone
     const email = input.email !== undefined ? input.email.trim() : existing?.email
+    const taxId = input.taxId !== undefined ? input.taxId.trim() : existing?.taxId
+    const address = input.address !== undefined ? input.address.trim() : existing?.address
     const studio: Studio = {
       id: input.id ?? createId('studio'),
       name: input.name.trim(),
@@ -66,6 +70,8 @@ export function useStudios() {
       // Only include optional contact fields when present (Firestore rejects undefined).
       ...(phone ? { phone } : {}),
       ...(email ? { email } : {}),
+      ...(taxId ? { taxId } : {}),
+      ...(address ? { address } : {}),
     }
     await getRepository().upsertStudio(user.uid, studio)
     await refresh()

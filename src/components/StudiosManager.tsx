@@ -17,6 +17,8 @@ export function StudiosManager() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [taxId, setTaxId] = useState('')
+  const [address, setAddress] = useState('')
   const [hourlyRate, setHourlyRate] = useState('150')
   const [color, setColor] = useState(STUDIO_COLORS[0])
   const [travelEnabled, setTravelEnabled] = useState(false)
@@ -38,6 +40,8 @@ export function StudiosManager() {
     setName('')
     setPhone('')
     setEmail('')
+    setTaxId('')
+    setAddress('')
     setHourlyRate('150')
     setColor(STUDIO_COLORS[studios.length % STUDIO_COLORS.length])
     setTravelEnabled(false)
@@ -52,6 +56,8 @@ export function StudiosManager() {
     setName(studio.name)
     setPhone(studio.phone ?? '')
     setEmail(studio.email ?? '')
+    setTaxId(studio.taxId ?? '')
+    setAddress(studio.address ?? '')
     setHourlyRate(String(studio.hourlyRate))
     setColor(studio.color)
     const hasTravel = (studio.travelPay ?? 0) > 0
@@ -80,6 +86,8 @@ export function StudiosManager() {
       swapPay: swapEnabled ? swapValue : 0,
       phone,
       email,
+      taxId,
+      address,
     })
     setOpen(false)
   }
@@ -148,9 +156,21 @@ export function StudiosManager() {
             onSubmit={(e) => void onSubmit(e)}
           >
             <h2>{editing ? 'עריכת סטודיו' : 'סטודיו חדש'}</h2>
-            <Field label="שם הסטודיו">
+            <Field label="שם העסק / בעלת העסק">
               <TextInput required value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
+            <div className="grid-2">
+              <Field label="ע.מ / ח.פ (אופציונלי)">
+                <TextInput
+                  inputMode="numeric"
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value)}
+                />
+              </Field>
+              <Field label="כתובת (אופציונלי)">
+                <TextInput value={address} onChange={(e) => setAddress(e.target.value)} />
+              </Field>
+            </div>
             <div className="grid-2">
               <Field label="טלפון (לשליחת מסמכים, אופציונלי)">
                 <TextInput
@@ -160,7 +180,7 @@ export function StudiosManager() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </Field>
-              <Field label="אימייל (לשליחת מסמכים, אופציונלי)">
+              <Field label={'דוא"ל (לשליחת מסמכים, אופציונלי)'}>
                 <TextInput
                   type="email"
                   value={email}
