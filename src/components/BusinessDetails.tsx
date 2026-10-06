@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from './Button'
 import { Collapsible } from './Collapsible'
-import { Field, TextInput } from './Field'
+import { Field, TextArea, TextInput, TextSelect } from './Field'
 import { useProfile } from '../hooks/useProfile'
 import type { BusinessProfile } from '../types'
 
@@ -13,6 +13,9 @@ export function BusinessDetails() {
   const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [logo, setLogo] = useState<'brand' | 'document'>('brand')
+  const [taxStatusLabel, setTaxStatusLabel] = useState('')
+  const [footerNote, setFooterNote] = useState('')
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -24,6 +27,9 @@ export function BusinessDetails() {
     setAddress(business.address ?? '')
     setPhone(business.phone ?? '')
     setEmail(business.email ?? '')
+    setLogo(business.logo ?? 'brand')
+    setTaxStatusLabel(business.taxStatusLabel ?? '')
+    setFooterNote(business.footerNote ?? '')
   }, [business])
 
   const onSubmit = async (event: React.FormEvent) => {
@@ -35,6 +41,9 @@ export function BusinessDetails() {
     if (address.trim()) next.address = address.trim()
     if (phone.trim()) next.phone = phone.trim()
     if (email.trim()) next.email = email.trim()
+    next.logo = logo
+    if (taxStatusLabel.trim()) next.taxStatusLabel = taxStatusLabel.trim()
+    if (footerNote.trim()) next.footerNote = footerNote.trim()
     setSaving(true)
     try {
       await saveBusiness(next)
@@ -103,6 +112,38 @@ export function BusinessDetails() {
               />
             </Field>
           </div>
+          <Field label="סוג עוסק (מוצג מתחת לשם העסק, ברירת מחדל: עוסק פטור)">
+            <TextInput
+              placeholder="עוסק פטור"
+              value={taxStatusLabel}
+              onChange={(e) => {
+                setTaxStatusLabel(e.target.value)
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <Field label="לוגו על המסמכים">
+            <TextSelect
+              value={logo}
+              onChange={(e) => {
+                setLogo(e.target.value as 'brand' | 'document')
+                setSaved(false)
+              }}
+            >
+              <option value="brand">MyPilates</option>
+              <option value="document">אייקון מסמך</option>
+            </TextSelect>
+          </Field>
+          <Field label="טקסט בתחתית המסמך (אופציונלי)">
+            <TextArea
+              rows={2}
+              value={footerNote}
+              onChange={(e) => {
+                setFooterNote(e.target.value)
+                setSaved(false)
+              }}
+            />
+          </Field>
           <Button type="submit" disabled={saving}>
             {saving ? 'שומר…' : 'שמירת פרטי עסק'}
           </Button>

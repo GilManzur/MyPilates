@@ -13,6 +13,12 @@ export interface BusinessProfile {
   email?: string
   /** Personal full name used in the sent/downloaded file name (falls back to legalName). */
   ownerFullName?: string
+  /** Logo printed on documents. Missing = 'brand' so existing documents keep their look. */
+  logo?: 'brand' | 'document'
+  /** Tax status line under the business name (defaults to "עוסק פטור"). */
+  taxStatusLabel?: string
+  /** Free text printed at the bottom of every document (optional). */
+  footerNote?: string
 }
 
 export interface UserProfile {
