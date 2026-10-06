@@ -7,11 +7,14 @@ import { jsPDF } from 'jspdf'
  * as the browser shows it — jsPDF's own text engine can't be trusted with Hebrew.
  */
 export async function elementToPdfBlob(node: HTMLElement): Promise<Blob> {
-  const dataUrl = await toPng(node, {
-    pixelRatio: 2,
-    backgroundColor: '#ffffff',
-    cacheBust: true,
-  })
+  // Make sure Heebo is loaded before measuring/rasterizing, otherwise mobile
+  // browsers lay text out with fallback metrics and glyphs overlap in the PDF.
+  await document.fonts?.ready
+  const options = { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true }
+  // The first pass warms up font/image embedding (often incomplete on mobile);
+  // the second render is the one we keep.
+  await toPng(node, options)
+  const dataUrl = await toPng(node, options)
   const img = await loadImage(dataUrl)
 
   const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' })
